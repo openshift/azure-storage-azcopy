@@ -1,0 +1,15 @@
+language: go
+
+os: osx
+
+before_install:
+  - go get golang.org/x/lint/golint
+
+script:
+  - go vet ./...
+  - golint ./...
+  - go test ./...
+
+go:
+  - 1.10.x
+  - master
