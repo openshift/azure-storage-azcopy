@@ -98,6 +98,9 @@ func (r ResourceString) ValueLocal() string {
 
 func (r ResourceString) addParamsToUrl(u *url.URL, sas, extraQuery string) {
 	for _, p := range []string{sas, extraQuery} {
+		// Sanity check: trim ? from the start
+		p = strings.TrimPrefix(p, "?")
+
 		if p == "" {
 			continue
 		}
@@ -181,11 +184,10 @@ type CopyJobPartOrderRequest struct {
 // CredentialInfo contains essential credential info which need be transited between modules,
 // and used during creating Azure storage client Credential.
 type CredentialInfo struct {
-	CredentialType           CredentialType
-	OAuthTokenInfo           OAuthTokenInfo
-	S3CredentialInfo         S3CredentialInfo
-	GCPCredentialInfo        GCPCredentialInfo
-	S2SSourceTokenCredential AuthTokenFunction
+	CredentialType    CredentialType
+	OAuthTokenInfo    OAuthTokenInfo
+	S3CredentialInfo  S3CredentialInfo
+	GCPCredentialInfo GCPCredentialInfo
 }
 
 func (c CredentialInfo) WithType(credentialType CredentialType) CredentialInfo {
@@ -239,6 +241,7 @@ type BlobTransferAttributes struct {
 	PutMd5                           bool                  // when uploading, should we create and PUT Content-MD5 hashes
 	MD5ValidationOption              HashValidationOption  // when downloading, how strictly should we validate MD5 hashes?
 	BlockSizeInBytes                 int64                 // when uploading/downloading/copying, specify the size of each chunk
+	PutBlobSizeInBytes               int64                 // when uploading, specify the threshold to determine if the blob should be uploaded in a single PUT request
 	DeleteSnapshotsOption            DeleteSnapshotsOption // when deleting, specify what to do with the snapshots
 	BlobTagsString                   string                // when user explicitly provides blob tags
 	PermanentDeleteOption            PermanentDeleteOption // Permanently deletes soft-deleted snapshots when indicated by user
@@ -339,14 +342,14 @@ type ListJobTransfersRequest struct {
 }
 
 type ResumeJobRequest struct {
-	JobID           JobID
-	SourceSAS       string
-	DestinationSAS  string
+	JobID            JobID
+	SourceSAS        string
+	DestinationSAS   string
 	SrcServiceClient *ServiceClient
 	DstServiceClient *ServiceClient
-	IncludeTransfer map[string]int
-	ExcludeTransfer map[string]int
-	CredentialInfo  CredentialInfo
+	IncludeTransfer  map[string]int
+	ExcludeTransfer  map[string]int
+	CredentialInfo   CredentialInfo
 }
 
 // represents the Details and details of a single transfer
@@ -362,6 +365,7 @@ type TransferDetail struct {
 type CancelPauseResumeResponse struct {
 	ErrorMsg              string
 	CancelledPauseResumed bool
+	JobStatus             JobStatus
 }
 
 // represents the list of Details and details of number of transfers

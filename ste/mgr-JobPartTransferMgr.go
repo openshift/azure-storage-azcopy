@@ -107,6 +107,7 @@ type IJobPartTransferMgr interface {
 type TransferInfo struct {
 	JobID                   common.JobID
 	BlockSize               int64
+	PutBlobSize             int64
 	Source                  string
 	SourceSize              int64
 	Destination             string
@@ -137,6 +138,9 @@ type TransferInfo struct {
 	S2SSrcBlobTier blob.AccessTier // AccessTierType (string) is used to accommodate service-side support matrix change.
 
 	RehydratePriority blob.RehydratePriority
+
+	VersionID  string
+	SnapshotID string
 }
 
 func (i *TransferInfo) IsFilePropertiesTransfer() bool {
@@ -329,29 +333,27 @@ func (jptm *jobPartTransferMgr) Info() *TransferInfo {
 	}
 
 	if versionID != "" {
-		versionID = "versionId=" + versionID
 		sURL, e := url.Parse(srcURI)
 		if e != nil {
 			panic(e)
 		}
 		if len(sURL.RawQuery) > 0 {
-			sURL.RawQuery += "&" + versionID
+			sURL.RawQuery += "&versionId=" + versionID
 		} else {
-			sURL.RawQuery = versionID
+			sURL.RawQuery = "versionId=" + versionID
 		}
 		srcURI = sURL.String()
 	}
 
 	if snapshotID != "" {
-		snapshotID = "snapshot=" + snapshotID
 		sURL, e := url.Parse(srcURI)
 		if e != nil {
 			panic(e)
 		}
 		if len(sURL.RawQuery) > 0 {
-			sURL.RawQuery += "&" + snapshotID
+			sURL.RawQuery += "&snapshot=" + snapshotID
 		} else {
-			sURL.RawQuery = snapshotID
+			sURL.RawQuery = "snapshot=" + snapshotID
 		}
 		srcURI = sURL.String()
 	}
@@ -379,7 +381,20 @@ func (jptm *jobPartTransferMgr) Info() *TransferInfo {
 			}
 		}
 	}
+	if blockSize > common.MaxBlockBlobBlockSize {
+		jptm.Log(common.LogWarning, fmt.Sprintf("block-size %d is greater than maximum allowed size %d, setting it to maximum allowed size", blockSize, int64(common.MaxBlockBlobBlockSize)))
+	}
 	blockSize = common.Iff(blockSize > common.MaxBlockBlobBlockSize, common.MaxBlockBlobBlockSize, blockSize)
+
+	// If the putBlobSize is 0, then the user didn't provide any putBlobSize, default to block size to default to no breaking changes (prior to this feature, we would use blockSize to determine the put blob size).
+	putBlobSize := dstBlobData.PutBlobSize
+	if putBlobSize == 0 {
+		putBlobSize = blockSize
+	}
+	if putBlobSize > common.MaxPutBlobSize {
+		jptm.Log(common.LogWarning, fmt.Sprintf("put-blob-size %d is greater than maximum allowed size %d, setting it to maximum allowed size", putBlobSize, int64(common.MaxPutBlobSize)))
+	}
+	putBlobSize = common.Iff(putBlobSize > common.MaxPutBlobSize, common.MaxPutBlobSize, putBlobSize)
 
 	var srcBlobTags common.BlobTags
 	if blobTags != nil {
@@ -394,6 +409,7 @@ func (jptm *jobPartTransferMgr) Info() *TransferInfo {
 	return &TransferInfo{
 		JobID:                          plan.JobID,
 		BlockSize:                      blockSize,
+		PutBlobSize:                    putBlobSize,
 		Source:                         srcURI,
 		SourceSize:                     sourceSize,
 		Destination:                    dstURI,
@@ -418,6 +434,8 @@ func (jptm *jobPartTransferMgr) Info() *TransferInfo {
 		SrcBlobType:       srcBlobType,
 		S2SSrcBlobTier:    srcBlobTier,
 		RehydratePriority: plan.RehydratePriority.ToRehydratePriorityType(),
+		VersionID:         versionID,
+		SnapshotID:        snapshotID,
 	}
 }
 
@@ -983,7 +1001,11 @@ func (jptm *jobPartTransferMgr) ReportTransferDone() uint32 {
 }
 
 func (jptm *jobPartTransferMgr) GetS2SSourceTokenCredential(ctx context.Context) (*string, error) {
-	return jptm.jobPartMgr.S2SSourceTokenCredential(ctx)
+	invalidToken := "InvalidToken" // This will be replaced by srcAuthPolicy with valid one
+	if jptm.jobPartMgr.SourceIsOAuth() {
+		return &invalidToken, nil
+	}
+	return nil, nil
 }
 
 func (jptm *jobPartTransferMgr) SrcServiceClient() *common.ServiceClient {

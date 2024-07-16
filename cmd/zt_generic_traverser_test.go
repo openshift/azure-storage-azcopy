@@ -103,6 +103,8 @@ func TestLocalWildcardOverlap(t *testing.T) {
 		true,
 		common.ETrailingDotOption.Enable(),
 		nil,
+		nil,
+		false,
 	)
 	a.Nil(err)
 
@@ -115,7 +117,7 @@ func TestLocalWildcardOverlap(t *testing.T) {
 	a.Nil(err)
 
 	a.Equal(map[string]bool{
-		"test.txt": true,
+		"test.txt":  true,
 		"tes*t.txt": true,
 	}, seenFiles)
 }

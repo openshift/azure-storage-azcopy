@@ -55,7 +55,7 @@ func NewClient(fileURL string, cred azcore.TokenCredential, options *ClientOptio
 	}
 	base.SetPipelineOptions((*base.ClientOptions)(conOptions), &plOpts)
 
-	azClient, err := azcore.NewClient(shared.FileClient, exported.ModuleVersion, plOpts, &conOptions.ClientOptions)
+	azClient, err := azcore.NewClient(exported.ModuleName, exported.ModuleVersion, plOpts, &conOptions.ClientOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func NewClientWithNoCredential(fileURL string, options *ClientOptions) (*Client,
 	plOpts := runtime.PipelineOptions{}
 	base.SetPipelineOptions((*base.ClientOptions)(conOptions), &plOpts)
 
-	azClient, err := azcore.NewClient(shared.FileClient, exported.ModuleVersion, plOpts, &conOptions.ClientOptions)
+	azClient, err := azcore.NewClient(exported.ModuleName, exported.ModuleVersion, plOpts, &conOptions.ClientOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +124,7 @@ func NewClientWithSharedKeyCredential(fileURL string, cred *SharedKeyCredential,
 	}
 	base.SetPipelineOptions((*base.ClientOptions)(conOptions), &plOpts)
 
-	azClient, err := azcore.NewClient(shared.FileClient, exported.ModuleVersion, plOpts, &conOptions.ClientOptions)
+	azClient, err := azcore.NewClient(exported.ModuleName, exported.ModuleVersion, plOpts, &conOptions.ClientOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -278,7 +278,7 @@ func (f *Client) Rename(ctx context.Context, destinationPath string, options *Re
 		newPathURL = strings.Split(newPathURL, "?")[0] + "?" + newDestQuery
 	}
 	newBlobURL, _ := shared.GetURLs(newPathURL)
-	lac, mac, smac, createOpts := path.FormatRenameOptions(options, newSrcPath)
+	lac, mac, smac, createOpts, cpkOpts := path.FormatRenameOptions(options, newSrcPath)
 
 	if f.identityCredential() != nil {
 		newBlobClient, err = blockblob.NewClient(newBlobURL, *f.identityCredential(), nil)
@@ -292,8 +292,8 @@ func (f *Client) Rename(ctx context.Context, destinationPath string, options *Re
 	if err != nil {
 		return RenameResponse{}, exported.ConvertToDFSError(err)
 	}
-	newFileClient := (*Client)(base.NewPathClient(newPathURL, newBlobURL, newBlobClient, f.generatedFileClientWithDFS().InternalClient().WithClientName(shared.FileClient), f.sharedKey(), f.identityCredential(), f.getClientOptions()))
-	resp, err := newFileClient.generatedFileClientWithDFS().Create(ctx, createOpts, nil, lac, mac, smac, nil)
+	newFileClient := (*Client)(base.NewPathClient(newPathURL, newBlobURL, newBlobClient, f.generatedFileClientWithDFS().InternalClient().WithClientName(exported.ModuleName), f.sharedKey(), f.identityCredential(), f.getClientOptions()))
+	resp, err := newFileClient.generatedFileClientWithDFS().Create(ctx, createOpts, nil, lac, mac, smac, cpkOpts)
 
 	//return RenameResponse{
 	//	Response:      resp,

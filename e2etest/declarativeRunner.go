@@ -81,12 +81,12 @@ func getValidCredCombinationsForFromTo(fromTo common.FromTo, requestedCredential
 	}
 
 	for _, srcCredType := range sourceTypes {
-		if srcCredType == common.ECredentialType.MDOAuthToken() && accountTypes[0] != EAccountType.OAuthManagedDisk() {
+		if srcCredType == common.ECredentialType.MDOAuthToken() && accountTypes[0] != EAccountType.OAuthManagedDisk() && accountTypes[0] != EAccountType.ManagedDiskSnapshotOAuth() {
 			continue // invalid selection
 		}
 
 		for _, dstCredType := range validCredTypesPerLocation[fromTo.To()] {
-			if dstCredType == common.ECredentialType.MDOAuthToken() && accountTypes[1] != EAccountType.OAuthManagedDisk() {
+			if dstCredType == common.ECredentialType.MDOAuthToken() && accountTypes[1] != EAccountType.OAuthManagedDisk() && accountTypes[0] != EAccountType.ManagedDiskSnapshotOAuth() {
 				continue // invalid selection
 			}
 
@@ -109,18 +109,18 @@ func RunScenarios(
 	operations Operation,
 	testFromTo TestFromTo,
 	validate Validate, // TODO: do we really want the test author to have to nominate which validation should happen?  Pros: better perf of tests. Cons: they have to tell us, and if they tell us wrong test may not test what they think it tests
-// _ interface{}, // TODO if we want it??, blockBlobsOnly or specific/all blob types
+	// _ interface{}, // TODO if we want it??, blockBlobsOnly or specific/all blob types
 
-// It would be a pain to list out every combo by hand,
-// In addition to the fact that not every credential type is sensible.
-// Thus, the E2E framework takes in a requested set of credential types, and applies them where sensible.
-// This allows you to make tests use OAuth only, SAS only, etc.
+	// It would be a pain to list out every combo by hand,
+	// In addition to the fact that not every credential type is sensible.
+	// Thus, the E2E framework takes in a requested set of credential types, and applies them where sensible.
+	// This allows you to make tests use OAuth only, SAS only, etc.
 	requestedCredentialTypesSrc []common.CredentialType,
 	requestedCredentialTypesDst []common.CredentialType,
 	p params,
 	hs *hooks,
 	fs testFiles,
-// TODO: do we need something here to explicitly say that we expect success or failure? For now, we are just inferring that from the elements of sourceFiles
+	// TODO: do we need something here to explicitly say that we expect success or failure? For now, we are just inferring that from the elements of sourceFiles
 	destAccountType AccountType,
 	srcAccountType AccountType,
 	scenarioSuffix string) {
@@ -135,13 +135,14 @@ func RunScenarios(
 	// construct all the scenarios
 	scenarios := make([]scenario, 0)
 	for _, op := range operations.getValues() {
-		if op == eOperation.Resume() {
+		if op == eOperation.Resume() || op == eOperation.Cancel() {
 			continue
 		}
 
 		seenFromTos := make(map[common.FromTo]bool)
+		fromTos := testFromTo.getValues(op)
 
-		for _, fromTo := range testFromTo.getValues(op) {
+		for _, fromTo := range fromTos {
 			// dedupe the scenarios
 			if _, ok := seenFromTos[fromTo]; ok {
 				continue
@@ -153,7 +154,7 @@ func RunScenarios(
 			for _, credTypes := range credentialTypes {
 				// Create unique name for generating container names
 				compactScenarioName := fmt.Sprintf("%.4s-%s-%c-%c%c", suiteName, testName, op.String()[0], fromTo.From().String()[0], fromTo.To().String()[0])
-				fullScenarioName := fmt.Sprintf("%s.%s.%s-%s", suiteName, testName, op.String(), fromTo.String())
+				fullScenarioName := fmt.Sprintf("%s.%s.%s-%s%s", suiteName, testName, op.String(), fromTo.From().String(), fromTo.To().String())
 				// Sub-test name is not globally unique (it doesn't need to be) but it is more human-readable
 				subtestName := fmt.Sprintf("%s-%s", op, fromTo)
 
@@ -166,9 +167,20 @@ func RunScenarios(
 					subtestName += "-" + scenarioSuffix
 				}
 
+				usedSrc, usedDst := srcAccountType, destAccountType
+				if fromTo.From() == common.ELocation.BlobFS() {
+					// switch to an account made for dfs
+					usedSrc = EAccountType.HierarchicalNamespaceEnabled()
+				}
+
+				if fromTo.To() == common.ELocation.BlobFS() {
+					// switch to an account made for dfs
+					usedDst = EAccountType.HierarchicalNamespaceEnabled()
+				}
+
 				s := scenario{
-					srcAccountType:      srcAccountType,
-					destAccountType:     destAccountType,
+					srcAccountType:      usedSrc,
+					destAccountType:     usedDst,
 					subtestName:         subtestName,
 					compactScenarioName: compactScenarioName,
 					fullScenarioName:    fullScenarioName,
@@ -180,6 +192,7 @@ func RunScenarios(
 					hs:                  hsToUse,
 					fs:                  fs.DeepCopy(),
 					needResume:          operations&eOperation.Resume() != 0,
+					needCancel:          operations&eOperation.Cancel() != 0,
 					stripTopDir:         p.stripTopDir,
 				}
 

@@ -85,13 +85,13 @@ func (cookedArgs cookedMakeCmdArgs) process() (err error) {
 		return fmt.Errorf("failed to resolve target: %w", err)
 	}
 
-	credentialInfo, _, err := GetCredentialInfoForLocation(ctx, cookedArgs.resourceLocation, resourceStringParts.Value, resourceStringParts.SAS, false, common.CpkOptions{})
+	credentialInfo, _, err := GetCredentialInfoForLocation(ctx, cookedArgs.resourceLocation, resourceStringParts, false, common.CpkOptions{})
 	if err != nil {
 		return err
 	}
 
 	// Note : trailing dot is only applicable to file operations anyway, so setting this to false
-	options := createClientOptions(common.AzcopyCurrentJobLogger)
+	options := createClientOptions(common.AzcopyCurrentJobLogger, nil)
 	resourceURL := cookedArgs.resourceURL.String()
 	cred := credentialInfo.OAuthTokenInfo.TokenCredential
 

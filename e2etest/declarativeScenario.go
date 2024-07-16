@@ -30,6 +30,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -38,7 +39,7 @@ import (
 )
 
 // E.g. if we have enumerationSuite/TestFooBar/Copy-LocalBlob the scenario is "Copy-LocalBlob"
-// A scenario is treated as a sub-test by our declarative test runner
+// A scenario is treated as a subtest by our declarative test runner
 type scenario struct {
 	// scenario config properties
 	srcAccountType      AccountType
@@ -60,6 +61,7 @@ type scenario struct {
 	a          asserter
 	state      scenarioState // TODO: does this really need to be a separate struct?
 	needResume bool
+	needCancel bool
 	chToStdin  chan string
 }
 
@@ -73,7 +75,7 @@ type scenarioState struct {
 func (s *scenario) Run() {
 	defer func() { // catch a test panicking
 		if err := recover(); err != nil {
-			s.a.Error(fmt.Sprintf("Test panicked: %v", err))
+			s.a.Error(fmt.Sprintf("Test panicked: %v\n%s", err, debug.Stack()))
 		}
 	}()
 	defer s.cleanup()
@@ -105,13 +107,17 @@ func (s *scenario) Run() {
 	// setup scenario
 	// First, validate the accounts make sense for the source/dests
 	if s.srcAccountType.IsBlobOnly() {
-		s.a.Assert(s.fromTo.From(), equals(), common.ELocation.Blob())
+		s.a.Assert(true, equals(), s.fromTo.From() == common.ELocation.Blob() || s.fromTo.From() == common.ELocation.BlobFS())
 	}
 
-	if s.destAccountType.IsBlobOnly() {
+	if s.destAccountType.IsManagedDisk() {
 		s.a.Assert(s.destAccountType, notEquals(), EAccountType.StdManagedDisk(), "Upload is not supported in MD testing yet")
 		s.a.Assert(s.destAccountType, notEquals(), EAccountType.OAuthManagedDisk(), "Upload is not supported in MD testing yet")
-		s.a.Assert(s.fromTo.To(), equals(), common.ELocation.Blob())
+		s.a.Assert(s.destAccountType, notEquals(), EAccountType.LargeManagedDisk(), "Upload is not supported in MD testing yet")
+		s.a.Assert(s.destAccountType, notEquals(), EAccountType.ManagedDiskSnapshot(), "Cannot upload to a MD snapshot")
+		s.a.Assert(s.destAccountType, notEquals(), EAccountType.ManagedDiskSnapshotOAuth(), "Cannot upload to a MD snapshot")
+		s.a.Assert(s.destAccountType, notEquals(), EAccountType.LargeManagedDiskSnapshot(), "Cannot upload to a MD snapshot")
+		s.a.Assert(true, equals(), s.fromTo.From() == common.ELocation.Blob() || s.fromTo.From() == common.ELocation.BlobFS())
 	}
 
 	// setup
@@ -147,6 +153,14 @@ func (s *scenario) Run() {
 		}
 
 		s.resumeAzCopy(azcopyDir)
+	}
+	if s.a.Failed() {
+		return // resume failed. No point in running validation
+	}
+
+	// cancel if needed
+	if s.needCancel {
+		s.cancelAzCopy(azcopyDir)
 	}
 	if s.a.Failed() {
 		return // resume failed. No point in running validation
@@ -248,10 +262,10 @@ func (s *scenario) assignSourceAndDest() {
 		// TODO: handle account to account (multi-container) scenarios
 		switch loc {
 		case common.ELocation.Local():
-			return &resourceLocal{common.Iff(s.p.destNull && !isSourceAcc, common.Dev_Null, "")}
+			return &resourceLocal{common.Iff[string](s.p.destNull && !isSourceAcc, common.Dev_Null, "")}
 		case common.ELocation.File():
 			return &resourceAzureFileShare{accountType: accType}
-		case common.ELocation.Blob():
+		case common.ELocation.Blob(), common.ELocation.BlobFS():
 			// TODO: handle the multi-container (whole account) scenario
 			// TODO: handle wider variety of account types
 			if accType.IsManagedDisk() {
@@ -260,10 +274,7 @@ func (s *scenario) assignSourceAndDest() {
 				return &resourceManagedDisk{config: *mdCfg}
 			}
 
-			return &resourceBlobContainer{accountType: accType}
-		case common.ELocation.BlobFS():
-			s.a.Error("Not implemented yet for blob FS")
-			return &resourceDummy{}
+			return &resourceBlobContainer{accountType: accType, isBlobFS: loc == common.ELocation.BlobFS()}
 		case common.ELocation.S3():
 			s.a.Error("Not implemented yet for S3")
 			return &resourceDummy{}
@@ -282,8 +293,10 @@ func (s *scenario) runAzCopy(logDirectory string) {
 	s.chToStdin = make(chan string) // unubuffered seems the most predictable for our usages
 	defer close(s.chToStdin)
 
+	tf := s.GetTestFiles()
+
 	r := newTestRunner()
-	r.SetAllFlags(s.p, s.operation)
+	r.SetAllFlags(s)
 
 	// use the general-purpose "after start" mechanism, provided by execDebuggableWithOutput,
 	// for the _specific_ purpose of running beforeOpenFirstFile, if that hook exists.
@@ -303,13 +316,22 @@ func (s *scenario) runAzCopy(logDirectory string) {
 
 	needsFromTo := s.destAccountType == EAccountType.Azurite() || s.srcAccountType == EAccountType.Azurite()
 
-	tf := s.GetTestFiles()
+	var destObjTarget objectTarget
+	if tf.destTarget != "" {
+		destObjTarget.objectName = tf.destTarget
+	} else if tf.objectTarget.objectName != "" &&
+		// Object target must have no list of versions.
+		(len(tf.objectTarget.versions) == 0 || (len(tf.objectTarget.versions) == 1 && !tf.objectTarget.singleVersionList)) {
+		destObjTarget.objectName = tf.objectTarget.objectName
+	}
+
 	// run AzCopy
 	result, wasClean, err := r.ExecuteAzCopyCommand(
 		s.operation,
-		s.state.source.getParam(s.stripTopDir, needsSAS(s.credTypes[0]), tf.objectTarget),
-		s.state.dest.getParam(false, needsSAS(s.credTypes[1]), common.Iff(tf.destTarget != "", tf.destTarget, tf.objectTarget)),
-		s.credTypes[0] == common.ECredentialType.OAuthToken() || s.credTypes[1] == common.ECredentialType.OAuthToken(), // needsOAuth
+		s.state.source.getParam(s.a, s.stripTopDir, needsSAS(s.credTypes[0]), tf.objectTarget),
+		s.state.dest.getParam(s.a, false, needsSAS(s.credTypes[1]), destObjTarget),
+		s.credTypes[0].IsAzureOAuth() || s.credTypes[1].IsAzureOAuth(), // needsOAuth
+		s.p.AutoLoginType,
 		needsFromTo,
 		s.fromTo,
 		afterStart, s.chToStdin, logDirectory)
@@ -330,16 +352,42 @@ func (s *scenario) runAzCopy(logDirectory string) {
 	s.state.result = &result
 }
 
+func (s *scenario) cancelAzCopy(logDir string) {
+	r := newTestRunner()
+	s.operation = eOperation.Cancel()
+	r.SetAllFlags(s)
+
+	afterStart := func() string { return "" }
+	result, wasClean, err := r.ExecuteAzCopyCommand(
+		eOperation.Cancel(),
+		s.state.result.jobID.String(),
+		"",
+		false,
+		"",
+		false,
+		s.fromTo,
+		afterStart,
+		s.chToStdin,
+		logDir,
+	)
+
+	if !wasClean {
+		s.a.AssertNoErr(err, "running AzCopy")
+	}
+
+	s.state.result = &result
+}
+
 func (s *scenario) resumeAzCopy(logDir string) {
 	s.chToStdin = make(chan string) // unubuffered seems the most predictable for our usages
 	defer close(s.chToStdin)
 
 	r := newTestRunner()
 	if sas := s.state.source.getSAS(); s.GetTestFiles().sourcePublic == nil && sas != "" {
-		r.flags["source-sas"] = sas
+		r.flags["source-sas"] = strings.TrimPrefix(sas, "?")
 	}
 	if sas := s.state.dest.getSAS(); sas != "" {
-		r.flags["destination-sas"] = sas
+		r.flags["destination-sas"] = strings.TrimPrefix(sas, "?")
 	}
 
 	// use the general-purpose "after start" mechanism, provided by execDebuggableWithOutput,
@@ -358,7 +406,8 @@ func (s *scenario) resumeAzCopy(logDir string) {
 		eOperation.Resume(),
 		s.state.result.jobID.String(),
 		"",
-		false,
+		s.credTypes[0].IsAzureOAuth() || s.credTypes[1].IsAzureOAuth(),
+		s.p.AutoLoginType,
 		false,
 		s.fromTo,
 		afterStart,
@@ -391,6 +440,11 @@ func (s *scenario) validateTransferStates(azcopyDir string) {
 		return
 	}
 
+	if s.operation == eOperation.Benchmark() {
+		// TODO: Benchmark validation will occur in new e2e test framework. For now the goal is to test that AzCopy doesn't crash.
+		return
+	}
+
 	isSrcEncoded := s.fromTo.From().IsRemote() // TODO: is this right, reviewers?
 	isDstEncoded := s.fromTo.To().IsRemote()   // TODO: is this right, reviewers?
 	srcRoot, dstRoot, expectFolders, expectRootFolder, _ := s.getTransferInfo()
@@ -402,11 +456,11 @@ func (s *scenario) validateTransferStates(azcopyDir string) {
 		// TODO: testing of skipped is implicit, in that they are created at the source, but don't exist in Success or Failed lists
 		//       Is that OK? (Not sure what to do if it's not, because azcopy jobs show, apparently doesn't offer us a way to get the skipped list)
 	} {
-		expectedTransfers := s.fs.getForStatus(statusToTest, expectFolders, expectRootFolder)
+		expectedTransfers := s.fs.getForStatus(s, statusToTest, expectFolders, expectRootFolder)
 		actualTransfers, err := s.state.result.GetTransferList(statusToTest, azcopyDir)
 		s.a.AssertNoErr(err)
 
-		Validator{}.ValidateCopyTransfersAreScheduled(s.a, isSrcEncoded, isDstEncoded, srcRoot, dstRoot, expectedTransfers, actualTransfers, statusToTest, expectFolders)
+		Validator{}.ValidateCopyTransfersAreScheduled(s, isSrcEncoded, isDstEncoded, srcRoot, dstRoot, expectedTransfers, actualTransfers, statusToTest, expectFolders)
 		// TODO: how are we going to validate folder transfers????
 	}
 
@@ -415,23 +469,21 @@ func (s *scenario) validateTransferStates(azcopyDir string) {
 }
 
 func (s *scenario) getTransferInfo() (srcRoot string, dstRoot string, expectFolders bool, expectedRootFolder bool, addedDirAtDest string) {
-	srcRoot = s.state.source.getParam(false, false, "")
-	dstRoot = s.state.dest.getParam(false, false, "")
+	srcRoot = s.state.source.getParam(s.a, false, false, objectTarget{})
+	dstRoot = s.state.dest.getParam(s.a, false, false, objectTarget{})
 
 	srcBase := filepath.Base(srcRoot)
 	srcRootURL, err := url.Parse(srcRoot)
 	if err == nil {
-		snapshotID := srcRootURL.Query().Get("sharesnapshot")
-		if snapshotID != "" {
-			srcBase = filepath.Base(strings.TrimSuffix(srcRoot, "?sharesnapshot="+snapshotID))
-		}
+		srcBase, _ = trimBaseSnapshotDetails(s.a, srcRootURL, s.fromTo.From(), s.srcAccountType)
+		srcBase = filepath.Base(srcBase)
 	}
 
 	// do we expect folder transfers
 	expectFolders = (s.fromTo.From().IsFolderAware() &&
 		s.fromTo.To().IsFolderAware() &&
 		s.p.allowsFolderTransfers()) ||
-		(s.p.preserveSMBPermissions && s.FromTo() == common.EFromTo.BlobBlob()) ||
+		(s.p.preserveSMBPermissions && s.FromTo().From().SupportsHnsACLs() && s.FromTo().To().SupportsHnsACLs()) ||
 		(s.p.preservePOSIXProperties && (s.FromTo() == common.EFromTo.LocalBlob() || s.FromTo() == common.EFromTo.BlobBlob() || s.FromTo() == common.EFromTo.BlobLocal()))
 	expectRootFolder := expectFolders
 
@@ -446,17 +498,17 @@ func (s *scenario) getTransferInfo() (srcRoot string, dstRoot string, expectFold
 		// Yes, this is arguably inconsistent. But its the way its always been, and it does seem to match user expectations for copies
 		// of that kind.
 		expectRootFolder = false
-	} else if expectRootFolder && s.fromTo == common.EFromTo.BlobLocal() && s.destAccountType != EAccountType.HierarchicalNamespaceEnabled() && tf.objectTarget == "" {
+	} else if expectRootFolder && s.fromTo == common.EFromTo.BlobLocal() && s.destAccountType != EAccountType.HierarchicalNamespaceEnabled() && tf.objectTarget.objectName == "" {
 		expectRootFolder = false // we can only persist the root folder if it's a subfolder of the container on Blob.
 
-		if tf.objectTarget == "" && tf.destTarget == "" {
+		if tf.objectTarget.objectName == "" && tf.destTarget == "" {
 			addedDirAtDest = path.Base(srcRoot)
 		} else if tf.destTarget != "" {
 			addedDirAtDest = tf.destTarget
 		}
 		dstRoot = fmt.Sprintf("%s/%s", dstRoot, addedDirAtDest)
 	} else if s.fromTo.From().IsLocal() {
-		if tf.objectTarget == "" && tf.destTarget == "" {
+		if tf.objectTarget.objectName == "" && tf.destTarget == "" {
 			addedDirAtDest = srcBase
 		} else if tf.destTarget != "" {
 			addedDirAtDest = tf.destTarget
@@ -466,7 +518,7 @@ func (s *scenario) getTransferInfo() (srcRoot string, dstRoot string, expectFold
 		// Preserving permissions includes the root folder, but for container-container, we don't expect any added folder name.
 		expectRootFolder = true
 	} else {
-		if tf.objectTarget == "" && tf.destTarget == "" {
+		if tf.objectTarget.objectName == "" && tf.destTarget == "" {
 			addedDirAtDest = srcBase
 		} else if tf.destTarget != "" {
 			addedDirAtDest = tf.destTarget
@@ -491,7 +543,7 @@ func (s *scenario) validateProperties() {
 	_, _, expectFolders, expectRootFolder, addedDirAtDest := s.getTransferInfo()
 
 	// for everything that should have been transferred, verify that any expected properties have been transferred to the destination
-	expectedFilesAndFolders := s.fs.getForStatus(common.ETransferStatus.Success(), expectFolders, expectRootFolder)
+	expectedFilesAndFolders := s.fs.getForStatus(s, common.ETransferStatus.Success(), expectFolders, expectRootFolder)
 	for _, f := range expectedFilesAndFolders {
 		expected := f.verificationProperties // use verificationProperties (i.e. what we expect) NOT creationProperties (what we made at the source). They won't ALWAYS be the same
 		if expected == nil {
@@ -530,7 +582,7 @@ func (s *scenario) validateProperties() {
 		// validate all the different things
 		s.validatePOSIXProperties(f, actual.nameValueMetadata)
 		s.validateSymlink(f, actual.nameValueMetadata)
-		s.validateMetadata(expected.nameValueMetadata, actual.nameValueMetadata)
+		s.validateMetadata(f, expected.nameValueMetadata, actual.nameValueMetadata)
 		s.validateBlobTags(expected.blobTags, actual.blobTags)
 		s.validateContentHeaders(expected.contentHeaders, actual.contentHeaders)
 		s.validateCreateTime(expected.creationTime, actual.creationTime)
@@ -562,7 +614,7 @@ func (s *scenario) validateContent() {
 	_, _, expectFolders, expectRootFolder, addedDirAtDest := s.getTransferInfo()
 
 	// for everything that should have been transferred, verify that any expected properties have been transferred to the destination
-	expectedFilesAndFolders := s.fs.getForStatus(common.ETransferStatus.Success(), expectFolders, expectRootFolder)
+	expectedFilesAndFolders := s.fs.getForStatus(s, common.ETransferStatus.Success(), expectFolders, expectRootFolder)
 	for _, f := range expectedFilesAndFolders {
 		if f.creationProperties.contentHeaders == nil {
 			s.a.Failed()
@@ -680,20 +732,22 @@ func metadataWithProperCasing(original map[string]*string) map[string]*string {
 }
 
 // // Individual property validation routines
-func (s *scenario) validateMetadata(expected, actual map[string]*string) {
+func (s *scenario) validateMetadata(f *testObject, expected, actual map[string]*string) {
+	cased := metadataWithProperCasing(actual)
+
 	for _, v := range common.AllLinuxProperties { // properties are evaluated elsewhere
 		delete(expected, v)
-		delete(actual, v)
+		delete(cased, v)
 	}
 
-	s.a.Assert(len(actual), equals(), len(expected), "Both should have same number of metadata entries")
-	cased := metadataWithProperCasing(actual)
+	s.a.Assert(len(cased), equals(), len(expected), "Both should have same number of metadata entries")
+
 	for key := range expected {
 		exValue := expected[key]
 		actualValue, ok := cased[key]
-		s.a.Assert(ok, equals(), true, fmt.Sprintf("expect key '%s' to be found in destination metadata", key))
+		s.a.Assert(ok, equals(), true, fmt.Sprintf("%s: expect key '%s' to be found in destination metadata", f.name, key))
 		if ok {
-			s.a.Assert(exValue, equals(), actualValue, fmt.Sprintf("Expect value for key '%s' to be '%s' but found '%s'", key, *exValue, *actualValue))
+			s.a.Assert(exValue, equals(), actualValue, fmt.Sprintf("%s: Expect value for key '%s' to be '%s' but found '%s'", f.name, key, *exValue, *actualValue))
 		}
 	}
 }

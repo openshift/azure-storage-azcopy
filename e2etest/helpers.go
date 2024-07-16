@@ -25,6 +25,9 @@ package e2etest
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
+	"encoding/binary"
+	"flag"
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/streaming"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
@@ -75,6 +78,8 @@ const (
 	blobfsPrefix                 = "blobfs"
 	defaultBlobFSFileSizeInBytes = 1000
 )
+
+var runLocallyOnly = flag.Bool("local-tests", false, "Tests with this flag are run locally only")
 
 func pointerTo[T any](in T) *T {
 	return &in
@@ -181,7 +186,8 @@ func getAzureFileURL(c asserter, sc *share.Client, prefix string) (fc *sharefile
 }
 
 // todo: consider whether to replace with common.NewRandomDataGenerator, which is
-//    believed to be faster
+//
+//	believed to be faster
 func getRandomDataAndReader(n int) (io.ReadSeekCloser, []byte) {
 	data := make([]byte, n)
 	rand.Read(data)
@@ -567,4 +573,11 @@ func GetContentTypeMap(fileExtensions []string) map[string]string {
 		}
 	}
 	return extensionsMap
+}
+
+// BlockIDIntToBase64 functions convert an int block ID to a base-64 string and vice versa
+func BlockIDIntToBase64(blockID int) string {
+	binaryBlockID := (&[4]byte{})[:]
+	binary.LittleEndian.PutUint32(binaryBlockID, uint32(blockID))
+	return base64.StdEncoding.EncodeToString(binaryBlockID)
 }
