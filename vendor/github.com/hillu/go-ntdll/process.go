@@ -88,6 +88,67 @@ typedef enum _PROCESS_INFORMATION_CLASS {
   ProcessTokenVirtualizationEnabled,
   ProcessConsoleHostProcess,
   ProcessWindowInformation,
+  ProcessHandleInformation,
+  ProcessMitigationPolicy,
+  ProcessDynamicFunctionTableInformation,
+  ProcessHandleCheckingMode,
+  ProcessKeepAliveCount,
+  ProcessRevokeFileHandles,
+  ProcessWorkingSetControl,
+  ProcessHandleTable,
+  ProcessCheckStackExtentsMode,
+  ProcessCommandLineInformation,
+  ProcessProtectionInformation,
+  ProcessMemoryExhaustion,
+  ProcessFaultInformation,
+  ProcessTelemetryIdInformation,
+  ProcessCommitReleaseInformation,
+  ProcessDefaultCpuSetsInformation,
+  ProcessAllowedCpuSetsInformation,
+  ProcessSubsystemProcess,
+  ProcessJobMemoryInformation,
+  ProcessInPrivate,
+  ProcessRaiseUMExceptionOnInvalidHandleClose,
+  ProcessIumChallengeResponse,
+  ProcessChildProcessInformation,
+  ProcessHighGraphicsPriorityInformation,
+  ProcessSubsystemInformation,
+  ProcessEnergyValues,
+  ProcessPowerThrottlingState,
+  ProcessReserved3Information,
+  ProcessWin32kSyscallFilterInformation,
+  ProcessDisableSystemAllowedCpuSets,
+  ProcessWakeInformation,
+  ProcessEnergyTrackingState,
+  ProcessManageWritesToExecutableMemory,
+  ProcessCaptureTrustletLiveDump,
+  ProcessTelemetryCoverage,
+  ProcessEnclaveInformation,
+  ProcessEnableReadWriteVmLogging,
+  ProcessUptimeInformation,
+  ProcessImageSection,
+  ProcessDebugAuthInformation,
+  ProcessSystemResourceManagement,
+  ProcessSequenceNumber,
+  ProcessLoaderDetour,
+  ProcessSecurityDomainInformation,
+  ProcessCombineSecurityDomainsInformation,
+  ProcessEnableLogging,
+  ProcessLeapSecondInformation,
+  ProcessFiberShadowStackAllocation,
+  ProcessFreeFiberShadowStackAllocation,
+  ProcessAltSystemCallInformation,
+  ProcessDynamicEHContinuationTargets,
+  ProcessDynamicEnforcedCetCompatibleRanges,
+  ProcessCreateStateChange,
+  ProcessApplyStateChange,
+  ProcessEnableOptionalXStateFeatures,
+  ProcessAltPrefetchParam,
+  ProcessAssignCpuPartitions,
+  ProcessPriorityClassEx,
+  ProcessMembershipInformation,
+  ProcessEffectiveIoPriority,
+  ProcessEffectivePagePriority,
 } PROCESS_INFORMATION_CLASS;
 */
 
@@ -222,6 +283,36 @@ typedef enum _THREAD_INFORMATION_CLASS {
 } THREAD_INFORMATION_CLASS;
 */
 
+/*
+func:
+NTSTATUS
+NtCreateProcess(
+    _Out_ PHANDLE ProcessHandle,
+    _In_ ACCESS_MASK DesiredAccess,
+    _In_opt_ POBJECT_ATTRIBUTES ObjectAttributes,
+    _In_ HANDLE ParentProcess,
+    _In_ BOOLEAN InheritObjectTable,
+    _In_opt_ HANDLE SectionHandle,
+    _In_opt_ HANDLE DebugPort,
+    _In_opt_ HANDLE TokenHandle
+);
+*/
+
+/*
+func:
+NTSTATUS NtCreateProcessEx(
+    _Out_ PHANDLE     ProcessHandle,
+    _In_ ACCESS_MASK  DesiredAccess,
+    _In_opt_ POBJECT_ATTRIBUTES ObjectAttributes,
+    _In_ HANDLE   ParentProcess,
+    _In_ ULONG    Flags,
+    _In_opt_ HANDLE SectionHandle,
+    _In_opt_ HANDLE DebugPort,
+    _In_opt_ HANDLE ExceptionPort,
+    _In_ BOOLEAN  InJob
+);
+*/
+
 const (
 	PROCESS_TERMINATE                 = 0x0001
 	PROCESS_CREATE_THREAD             = 0x0002
@@ -236,6 +327,7 @@ const (
 	PROCESS_QUERY_INFORMATION         = 0x0400
 	PROCESS_SUSPEND_RESUME            = 0x0800
 	PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+	PROCESS_ALL_ACCESS                = (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0xffff)
 )
 
 const (

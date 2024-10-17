@@ -1,5 +1,29 @@
 # Release History
 
+## 1.4.0 (2024-07-18)
+
+### Other Changes
+* GetProperties() was called twice in DownloadFile method. Enhanced to call it only once, reducing latency.
+* Updated `azcore` version to `1.13.0`
+
+## 1.4.0-beta.1 (2024-06-14)
+
+### Features Added
+* Updated service version to `2024-05-04`.
+
+### Other Changes
+* Updated `azidentity` version to `1.6.0`
+* Updated `azcore` version to `1.12.0`
+
+## 1.3.2 (2024-04-09)
+
+### Bugs Fixed
+* Fixed an issue where GetSASURL() was providing HTTPS SAS, instead of the default http+https SAS. Fixes [#22448](https://github.com/Azure/azure-sdk-for-go/issues/22448)
+
+### Other Changes
+* Integrate `InsecureAllowCredentialWithHTTP` client options.
+* Update dependencies.
+
 ## 1.3.1 (2024-02-28)
 
 ### Bugs Fixed

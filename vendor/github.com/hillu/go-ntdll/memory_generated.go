@@ -4,6 +4,7 @@
 package ntdll
 
 import "unsafe"
+import "reflect"
 
 // The MemoryInformationClass constants have been derived from the MEMORY_INFORMATION_CLASS enum definition.
 type MemoryInformationClass uint32
@@ -32,6 +33,101 @@ var (
 	procNtQueryVirtualMemory    = modntdll.NewProc("NtQueryVirtualMemory")
 	procNtFlushVirtualMemory    = modntdll.NewProc("NtFlushVirtualMemory")
 )
+
+// MemoryBasicInformationT has been derived from the MEMORY_BASIC_INFORMATION struct definition.
+type MemoryBasicInformationT struct {
+	BaseAddress       *byte
+	AllocationBase    *byte
+	AllocationProtect uint32
+	PartitionId       uint16
+	RegionSize        uintptr
+	State             uint32
+	Protect           uint32
+	Type              uint32
+}
+
+// MemoryBasicInformation32 has been derived from the MEMORY_BASIC_INFORMATION32 struct definition.
+type MemoryBasicInformation32 struct {
+	BaseAddress       uint32
+	AllocationBase    uint32
+	AllocationProtect uint32
+	RegionSize        uint32
+	State             uint32
+	Protect           uint32
+	Type              uint32
+}
+
+// MemoryBasicInformation64 has been derived from the MEMORY_BASIC_INFORMATION64 struct definition.
+type MemoryBasicInformation64 struct {
+	BaseAddress       uint64
+	AllocationBase    uint64
+	AllocationProtect uint32
+	__alignment1      uint32
+	RegionSize        uint64
+	State             uint32
+	Protect           uint32
+	Type              uint32
+	__alignment2      uint32
+}
+
+// MemoryWorkingSetInformationT has been derived from the MEMORY_WORKING_SET_INFORMATION struct definition.
+type MemoryWorkingSetInformationT struct {
+	NumberOfEntries *uint32
+	WorkingSetInfo  [1]MemoryWorkingSetBlock
+}
+
+// WorkingSetInfoSlice returns a slice over the elements of MemoryWorkingSetInformationT.WorkingSetInfo.
+//
+// Beware: The data is not copied out of MemoryWorkingSetInformationT. The size can usually be taken from an other member of the struct (MemoryWorkingSetInformationT).
+func (t *MemoryWorkingSetInformationT) WorkingSetInfoSlice(size int) []MemoryWorkingSetBlock {
+	s := []MemoryWorkingSetBlock{}
+	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&s))
+	hdr.Data = uintptr(unsafe.Pointer(&t.WorkingSetInfo[0]))
+	hdr.Len = size
+	hdr.Cap = size
+	return s
+}
+
+// SetWorkingSetInfoSlice copies s into the memory at MemoryWorkingSetInformationT.WorkingSetInfo.
+//
+// Beware: No bounds check is performed. Another member of the struct (MemoryWorkingSetInformationT) usually has to be set to the array size.
+func (t *MemoryWorkingSetInformationT) SetWorkingSetInfoSlice(s []MemoryWorkingSetBlock) {
+	s1 := []MemoryWorkingSetBlock{}
+	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&s1))
+	hdr.Data = uintptr(unsafe.Pointer(&t.WorkingSetInfo[0]))
+	hdr.Len = len(s)
+	hdr.Cap = len(s)
+	copy(s1, s)
+}
+
+// MemoryRegionInformationT has been derived from the MEMORY_REGION_INFORMATION struct definition.
+type MemoryRegionInformationT struct {
+	AllocationBase    *byte
+	AllocationProtect uint32
+	RegionType        uint32
+	RegionSize        uintptr
+	CommitSize        uintptr
+	PartitionId       *uint32
+	NodePreference    *uint32
+}
+
+// MemoryWorkingSetExInformationT has been derived from the MEMORY_WORKING_SET_EX_INFORMATION struct definition.
+type MemoryWorkingSetExInformationT struct {
+	VirtualAddress    *byte
+	VirtualAttributes MemoryWorkingSetExBlock
+}
+
+// MemorySharedCommitInformationT has been derived from the MEMORY_SHARED_COMMIT_INFORMATION struct definition.
+type MemorySharedCommitInformationT struct {
+	CommitSize uintptr
+}
+
+// MemoryImageInformationT has been derived from the MEMORY_IMAGE_INFORMATION struct definition.
+type MemoryImageInformationT struct {
+	ImageBase   *byte
+	SizeOfImage uintptr
+	ImageFlags  uint32
+}
 
 // INOUT-parameter: BaseAddress, RegionSize.
 func NtAllocateVirtualMemory(

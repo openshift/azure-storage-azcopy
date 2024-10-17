@@ -8,6 +8,7 @@ package sas
 
 import (
 	"errors"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azdatalake/internal/generated"
 	"net"
 	"net/url"
 	"strings"
@@ -21,7 +22,7 @@ const (
 
 var (
 	// Version is the default version encoded in the SAS token.
-	Version = "2020-12-06"
+	Version = generated.ServiceVersion
 )
 
 // TimeFormats ISO 8601 format.
@@ -472,8 +473,6 @@ func newQueryParameters(values url.Values, deleteSASParametersFromValues bool) Q
 			p.resource = val
 		case "sp":
 			p.permissions = val
-			//case "snapshot":
-			//	p.snapshotTime, _ = time.Parse(exported.SnapshotTimeFormat, val)
 		case "sig":
 			p.signature = val
 		case "rscc":

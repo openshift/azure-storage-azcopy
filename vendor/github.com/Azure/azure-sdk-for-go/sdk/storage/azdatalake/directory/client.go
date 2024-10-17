@@ -42,8 +42,9 @@ type Client base.CompositeClient[generated.PathClient, generated_blob.BlobClient
 func NewClient(directoryURL string, cred azcore.TokenCredential, options *ClientOptions) (*Client, error) {
 	blobURL, directoryURL := shared.GetURLs(directoryURL)
 
-	authPolicy := runtime.NewBearerTokenPolicy(cred, []string{shared.TokenScope}, nil)
+	audience := base.GetAudience((*base.ClientOptions)(options))
 	conOptions := shared.GetClientOptions(options)
+	authPolicy := shared.NewStorageChallengePolicy(cred, audience, conOptions.InsecureAllowCredentialWithHTTP)
 	plOpts := runtime.PipelineOptions{
 		PerRetry: []policy.Policy{authPolicy},
 	}
@@ -262,9 +263,14 @@ func (d *Client) Create(ctx context.Context, options *CreateOptions) (CreateResp
 // Delete deletes directory and any path under it.
 func (d *Client) Delete(ctx context.Context, options *DeleteOptions) (DeleteResponse, error) {
 	lac, mac, deleteOpts := path.FormatDeleteOptions(options, true)
-	resp, err := d.generatedDirClientWithDFS().Delete(ctx, deleteOpts, lac, mac)
-	err = exported.ConvertToDFSError(err)
-	return resp, err
+	for {
+		resp, err := d.generatedDirClientWithDFS().Delete(ctx, deleteOpts, lac, mac)
+		if resp.Continuation == nil || err != nil {
+			err = exported.ConvertToDFSError(err)
+			return resp, err
+		}
+		deleteOpts.Continuation = resp.Continuation
+	}
 }
 
 // GetProperties gets the properties of a directory.
@@ -334,10 +340,6 @@ func (d *Client) Rename(ctx context.Context, destinationPath string, options *Re
 	}
 	newDirClient := (*Client)(base.NewPathClient(newPathURL, newBlobURL, newBlobClient, d.generatedDirClientWithDFS().InternalClient().WithClientName(exported.ModuleName), d.sharedKey(), d.identityCredential(), d.getClientOptions()))
 	resp, err := newDirClient.generatedDirClientWithDFS().Create(ctx, createOpts, nil, lac, mac, smac, cpkOpts)
-	//return RenameResponse{
-	//	Response:           resp,
-	//	NewDirectoryClient: newDirClient,
-	//}, exported.ConvertToDFSError(err)
 	return path.FormatRenameResponse(&resp), exported.ConvertToDFSError(err)
 }
 
@@ -408,7 +410,7 @@ func (d *Client) setAccessControlRecursiveHelper(ctx context.Context, mode gener
 		finalResponse.FilesSuccessful = to.Ptr(*finalResponse.FilesSuccessful + *resp.FilesSuccessful)
 		finalResponse.FailureCount = to.Ptr(*finalResponse.FailureCount + *resp.FailureCount)
 		finalResponse.FailedEntries = append(finalResponse.FailedEntries, resp.FailedEntries...)
-		counter = counter - 1
+		counter--
 		if !*continueOnFailure && *resp.FailureCount > 0 {
 			return finalResponse, exported.ConvertToDFSError(err)
 		}
@@ -417,29 +419,29 @@ func (d *Client) setAccessControlRecursiveHelper(ctx context.Context, mode gener
 }
 
 // SetAccessControlRecursive sets the owner, owning group, and permissions for a directory.
-func (d *Client) SetAccessControlRecursive(ctx context.Context, ACL string, options *SetAccessControlRecursiveOptions) (SetAccessControlRecursiveResponse, error) {
+func (d *Client) SetAccessControlRecursive(ctx context.Context, acl string, options *SetAccessControlRecursiveOptions) (SetAccessControlRecursiveResponse, error) {
 	if options == nil {
 		options = &SetAccessControlRecursiveOptions{}
 	}
-	mode, listOptions := options.format(ACL, "set")
+	mode, listOptions := options.format(acl, "set")
 	return d.setAccessControlRecursiveHelper(ctx, mode, listOptions, options)
 }
 
 // UpdateAccessControlRecursive updates the owner, owning group, and permissions for a directory.
-func (d *Client) UpdateAccessControlRecursive(ctx context.Context, ACL string, options *UpdateAccessControlRecursiveOptions) (SetAccessControlRecursiveResponse, error) {
+func (d *Client) UpdateAccessControlRecursive(ctx context.Context, acl string, options *UpdateAccessControlRecursiveOptions) (SetAccessControlRecursiveResponse, error) {
 	if options == nil {
 		options = &UpdateAccessControlRecursiveOptions{}
 	}
-	mode, listOptions := options.format(ACL, "modify")
+	mode, listOptions := options.format(acl, "modify")
 	return d.setAccessControlRecursiveHelper(ctx, mode, listOptions, options)
 }
 
 // RemoveAccessControlRecursive removes the owner, owning group, and permissions for a directory.
-func (d *Client) RemoveAccessControlRecursive(ctx context.Context, ACL string, options *RemoveAccessControlRecursiveOptions) (SetAccessControlRecursiveResponse, error) {
+func (d *Client) RemoveAccessControlRecursive(ctx context.Context, acl string, options *RemoveAccessControlRecursiveOptions) (SetAccessControlRecursiveResponse, error) {
 	if options == nil {
 		options = &RemoveAccessControlRecursiveOptions{}
 	}
-	mode, listOptions := options.format(ACL, "remove")
+	mode, listOptions := options.format(acl, "remove")
 	return d.setAccessControlRecursiveHelper(ctx, mode, listOptions, options)
 }
 

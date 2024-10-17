@@ -8,6 +8,8 @@ package filesystem
 
 import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azdatalake/directory"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azdatalake/file"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azdatalake/internal/exported"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azdatalake/internal/generated"
 	"time"
@@ -199,17 +201,16 @@ func (o *GetSASURLOptions) format() time.Time {
 	return st
 }
 
-//// UndeletePathOptions contains the optional parameters for the FileSystem.UndeletePath operation.
-//type UndeletePathOptions struct {
+// UndeletePathOptions contains the optional parameters for the FileSystem.UndeletePath operation.
+// type UndeletePathOptions struct {
 //	// placeholder
-//}
-//
-//func (o *UndeletePathOptions) format() *UndeletePathOptions {
+// }
+// func (o *UndeletePathOptions) format() *UndeletePathOptions {
 //	if o == nil {
 //		return nil
 //	}
 //	return &UndeletePathOptions{}
-//}
+// }
 
 // CPKScopeInfo contains a group of parameters for the FileSystemClient.Create method.
 type CPKScopeInfo = container.CPKScopeInfo
@@ -250,3 +251,9 @@ type PathProperties = generated.PathPropertiesInternal
 
 // PathPrefix contains the response from method FileSystemClient.ListPathsHierarchySegment.
 type PathPrefix = generated.PathPrefix
+
+// CreateFileOptions contains the optional parameters when calling the CreateFile operation.
+type CreateFileOptions = file.CreateOptions
+
+// CreateDirectoryOptions contains the optional parameters when calling the CreateDirectory operation.
+type CreateDirectoryOptions = directory.CreateOptions

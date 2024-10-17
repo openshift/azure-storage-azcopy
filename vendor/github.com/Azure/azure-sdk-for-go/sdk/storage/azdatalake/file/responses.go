@@ -14,6 +14,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azdatalake/internal/generated_blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azdatalake/internal/path"
 	"io"
+	"net/http"
 	"time"
 )
 
@@ -71,6 +72,9 @@ func (r *DownloadStreamResponse) NewRetryReader(ctx context.Context, options *Re
 type DownloadResponse struct {
 	// AcceptRanges contains the information returned from the Accept-Ranges header response.
 	AcceptRanges *string
+
+	// AccessControlList contains the combined list of access that are set for user, group and other on the file
+	AccessControlList *string
 
 	// Body contains the streaming response.
 	Body io.ReadCloser
@@ -135,6 +139,9 @@ type DownloadResponse struct {
 	// EncryptionScope contains the information returned from the x-ms-encryption-scope header response.
 	EncryptionScope *string
 
+	// EncryptionContext contains the information returned from the x-ms-encryption-context header response.
+	EncryptionContext *string
+
 	// ErrorCode contains the information returned from the x-ms-error-code header response.
 	ErrorCode *string
 
@@ -193,7 +200,7 @@ type DownloadResponse struct {
 	VersionID *string
 }
 
-func FormatDownloadStreamResponse(r *blob.DownloadStreamResponse) DownloadResponse {
+func FormatDownloadStreamResponse(r *blob.DownloadStreamResponse, rawResponse *http.Response) DownloadResponse {
 	newResp := DownloadResponse{}
 	if r != nil {
 		newResp.AcceptRanges = r.AcceptRanges
@@ -237,6 +244,12 @@ func FormatDownloadStreamResponse(r *blob.DownloadStreamResponse) DownloadRespon
 		newResp.TagCount = r.TagCount
 		newResp.Version = r.Version
 		newResp.VersionID = r.VersionID
+	}
+	if val := rawResponse.Header.Get("x-ms-encryption-context"); val != "" {
+		newResp.EncryptionContext = &val
+	}
+	if val := rawResponse.Header.Get("x-ms-acl"); val != "" {
+		newResp.AccessControlList = &val
 	}
 	return newResp
 }

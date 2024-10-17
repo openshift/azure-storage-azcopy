@@ -1,3 +1,4 @@
+//go:build solaris
 // +build solaris
 
 package xattr
@@ -23,7 +24,7 @@ const (
 )
 
 func getxattr(path string, name string, data []byte) (int, error) {
-	f, err := os.OpenFile(path, os.O_RDONLY, 0)
+	f, err := openNonblock(path)
 	if err != nil {
 		return 0, err
 	}
@@ -49,7 +50,7 @@ func fgetxattr(f *os.File, name string, data []byte) (int, error) {
 }
 
 func setxattr(path string, name string, data []byte, flags int) error {
-	f, err := os.OpenFile(path, os.O_RDONLY, 0)
+	f, err := openNonblock(path)
 	if err != nil {
 		return err
 	}
@@ -86,11 +87,12 @@ func fsetxattr(f *os.File, name string, data []byte, flags int) error {
 }
 
 func removexattr(path string, name string) error {
-	fd, err := unix.Open(path, unix.O_RDONLY|unix.O_XATTR, 0)
+	mode := unix.O_RDONLY | unix.O_XATTR | unix.O_NONBLOCK | unix.O_CLOEXEC
+	fd, err := unix.Open(path, mode, 0)
 	if err != nil {
 		return err
 	}
-	f := os.NewFile(uintptr(fd), path);
+	f := os.NewFile(uintptr(fd), path)
 	defer func() {
 		_ = f.Close()
 	}()
@@ -113,7 +115,7 @@ func fremovexattr(f *os.File, name string) error {
 }
 
 func listxattr(path string, data []byte) (int, error) {
-	f, err := os.OpenFile(path, os.O_RDONLY, 0)
+	f, err := openNonblock(path)
 	if err != nil {
 		return 0, err
 	}
@@ -130,7 +132,7 @@ func llistxattr(path string, data []byte) (int, error) {
 func flistxattr(f *os.File, data []byte) (int, error) {
 	fd, err := unix.Openat(int(f.Fd()), ".", unix.O_RDONLY|unix.O_XATTR, 0)
 	if err != nil {
-		return 0, err
+		return 0, unix.ENOTSUP
 	}
 	xf := os.NewFile(uintptr(fd), f.Name())
 	defer func() {
@@ -150,8 +152,17 @@ func flistxattr(f *os.File, data []byte) (int, error) {
 	return copy(data, buf), nil
 }
 
+// Like os.Open, but passes O_NONBLOCK to the open(2) syscall.
+func openNonblock(path string) (*os.File, error) {
+	fd, err := unix.Open(path, unix.O_RDONLY|unix.O_CLOEXEC|unix.O_NONBLOCK, 0)
+	if err != nil {
+		return nil, err
+	}
+	return os.NewFile(uintptr(fd), path), err
+}
+
 // stringsFromByteSlice converts a sequence of attributes to a []string.
-// On Darwin and Linux, each entry is a NULL-terminated string.
+// We simulate Linux/Darwin, where each entry is a NULL-terminated string.
 func stringsFromByteSlice(buf []byte) (result []string) {
 	offset := 0
 	for index, b := range buf {

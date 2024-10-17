@@ -4,6 +4,7 @@
 package ntdll
 
 import "unsafe"
+import "reflect"
 
 // The ObjectInformationClass constants have been derived from the OBJECT_INFORMATION_CLASS enum definition.
 type ObjectInformationClass uint32
@@ -23,9 +24,9 @@ var (
 	procNtQuerySymbolicLinkObject  = modntdll.NewProc("NtQuerySymbolicLinkObject")
 	procNtCreateSymbolicLinkObject = modntdll.NewProc("NtCreateSymbolicLinkObject")
 	procNtCreateDirectoryObject    = modntdll.NewProc("NtCreateDirectoryObject")
+	procNtCreateDirectoryObjectEx  = modntdll.NewProc("NtCreateDirectoryObjectEx")
 	procNtQueryObject              = modntdll.NewProc("NtQueryObject")
 	procNtDuplicateObject          = modntdll.NewProc("NtDuplicateObject")
-	procNtCreateSection            = modntdll.NewProc("NtCreateSection")
 )
 
 // ObjectAttributes has been derived from the OBJECT_ATTRIBUTES struct definition.
@@ -103,6 +104,30 @@ type ObjectTypeInformationT struct {
 type ObjectAllInformationT struct {
 	NumberOfObjects       uint32
 	ObjectTypeInformation [1]ObjectTypeInformationT
+}
+
+// ObjectTypeInformationSlice returns a slice over the elements of ObjectAllInformationT.ObjectTypeInformation.
+//
+// Beware: The data is not copied out of ObjectAllInformationT. The size can usually be taken from an other member of the struct (ObjectAllInformationT).
+func (t *ObjectAllInformationT) ObjectTypeInformationSlice(size int) []ObjectTypeInformationT {
+	s := []ObjectTypeInformationT{}
+	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&s))
+	hdr.Data = uintptr(unsafe.Pointer(&t.ObjectTypeInformation[0]))
+	hdr.Len = size
+	hdr.Cap = size
+	return s
+}
+
+// SetObjectTypeInformationSlice copies s into the memory at ObjectAllInformationT.ObjectTypeInformation.
+//
+// Beware: No bounds check is performed. Another member of the struct (ObjectAllInformationT) usually has to be set to the array size.
+func (t *ObjectAllInformationT) SetObjectTypeInformationSlice(s []ObjectTypeInformationT) {
+	s1 := []ObjectTypeInformationT{}
+	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&s1))
+	hdr.Data = uintptr(unsafe.Pointer(&t.ObjectTypeInformation[0]))
+	hdr.Len = len(s)
+	hdr.Cap = len(s)
+	copy(s1, s)
 }
 
 // ObjectDataInformationT has been derived from the OBJECT_DATA_INFORMATION struct definition.
@@ -197,6 +222,22 @@ func NtCreateDirectoryObject(
 	return NtStatus(r0)
 }
 
+// OUT-parameter: DirectoryHandle.
+func NtCreateDirectoryObjectEx(
+	DirectoryHandle *Handle,
+	DesiredAccess AccessMask,
+	ObjectAttributes *ObjectAttributes,
+	ShadowDirectoryHandle Handle,
+	Flags uint32,
+) NtStatus {
+	r0, _, _ := procNtCreateDirectoryObjectEx.Call(uintptr(unsafe.Pointer(DirectoryHandle)),
+		uintptr(DesiredAccess),
+		uintptr(unsafe.Pointer(ObjectAttributes)),
+		uintptr(ShadowDirectoryHandle),
+		uintptr(Flags))
+	return NtStatus(r0)
+}
+
 // OUT-parameter: ObjectInformation, ReturnLength.
 // *OPT-parameter: Handle, ReturnLength.
 func NtQueryObject(
@@ -232,26 +273,5 @@ func NtDuplicateObject(
 		uintptr(DesiredAccess),
 		uintptr(HandleAttributes),
 		uintptr(Options))
-	return NtStatus(r0)
-}
-
-// OUT-parameter: SectionHandle.
-// *OPT-parameter: ObjectAttributes, MaximumSize, FileHandle.
-func NtCreateSection(
-	SectionHandle *Handle,
-	DesiredAccess AccessMask,
-	ObjectAttributes *ObjectAttributes,
-	MaximumSize *int64,
-	SectionPageProtection uint32,
-	AllocationAttributes uint32,
-	FileHandle Handle,
-) NtStatus {
-	r0, _, _ := procNtCreateSection.Call(uintptr(unsafe.Pointer(SectionHandle)),
-		uintptr(DesiredAccess),
-		uintptr(unsafe.Pointer(ObjectAttributes)),
-		uintptr(unsafe.Pointer(MaximumSize)),
-		uintptr(SectionPageProtection),
-		uintptr(AllocationAttributes),
-		uintptr(FileHandle))
 	return NtStatus(r0)
 }
