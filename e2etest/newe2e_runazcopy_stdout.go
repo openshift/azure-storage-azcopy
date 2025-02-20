@@ -11,6 +11,7 @@ var _ AzCopyStdout = &AzCopyParsedStdout{}
 var _ AzCopyStdout = &AzCopyParsedListStdout{}
 var _ AzCopyStdout = &AzCopyParsedCopySyncRemoveStdout{}
 var _ AzCopyStdout = &AzCopyParsedDryrunStdout{}
+var _ AzCopyStdout = &AzCopyParsedJobsListStdout{}
 
 // ManySubscriberChannel is intended to reproduce the effects of .NET's events.
 // This allows us to *partially* answer the question of how we want to handle testing of prompting in the New E2E framework.
@@ -151,6 +152,9 @@ type AzCopyParsedCopySyncRemoveStdout struct {
 	AzCopyParsedStdout
 	listenChan chan<- common.JsonOutputTemplate
 
+	JobPlanFolder string
+	LogFolder     string
+
 	InitMsg     common.InitMsgJsonTemplate
 	FinalStatus common.ListJobSummaryResponse
 }
@@ -171,26 +175,67 @@ func (a *AzCopyParsedCopySyncRemoveStdout) Write(p []byte) (n int, err error) {
 }
 
 type AzCopyParsedDryrunStdout struct {
-	AzCopyParsedStdout
-	listenChan chan<- common.JsonOutputTemplate
+	AzCopyRawStdout
 
-	ScheduledTransfers map[string]common.CopyTransfer
+	fromTo common.FromTo // fallback for text output
+
+	listenChan chan<- cmd.DryrunTransfer
+
+	Transfers []cmd.DryrunTransfer
+	Raw       map[string]bool
+	JsonMode  bool
 }
 
-func (a *AzCopyParsedDryrunStdout) Write(p []byte) (n int, err error) {
+func (d *AzCopyParsedDryrunStdout) Write(p []byte) (n int, err error) {
+	lines := strings.Split(string(p), "\n")
+	for _, str := range lines {
+		if !d.JsonMode && strings.HasPrefix(str, "DRYRUN: ") {
+			if strings.HasPrefix(str, "DRYRUN: warn") {
+				continue
+			}
+
+			d.Raw[str] = true
+		} else {
+			var out common.JsonOutputTemplate
+			err = json.Unmarshal([]byte(str), &out)
+			if err != nil {
+				continue
+			}
+
+			if out.MessageType != common.EOutputMessageType.Dryrun().String() {
+				continue
+			}
+
+			var tx cmd.DryrunTransfer
+			err = json.Unmarshal([]byte(out.MessageContent), &tx)
+			if err != nil {
+				continue
+			}
+		}
+	}
+
+	return d.AzCopyRawStdout.Write(p)
+}
+
+type AzCopyParsedJobsListStdout struct {
+	AzCopyParsedStdout
+	listenChan chan<- common.JsonOutputTemplate
+	JobsCount  int
+}
+
+func (a *AzCopyParsedJobsListStdout) Write(p []byte) (n int, err error) {
 	if a.listenChan == nil {
 		a.listenChan = a.OnParsedLine.SubscribeFunc(func(line common.JsonOutputTemplate) {
-			if line.MessageType == common.EOutputMessageType.Dryrun().String() {
-				var tx common.CopyTransfer
+			if line.MessageType == common.EOutputMessageType.EndOfJob().String() {
+				var tx common.ListJobsResponse
 				err = json.Unmarshal([]byte(line.MessageContent), &tx)
 				if err != nil {
 					return
 				}
 
-				a.ScheduledTransfers[tx.Source] = tx
+				a.JobsCount = len(tx.JobIDDetails)
 			}
 		})
 	}
-
 	return a.AzCopyParsedStdout.Write(p)
 }

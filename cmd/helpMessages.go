@@ -21,21 +21,21 @@ const copyCmdShortDescription = "Copies source data to a destination location"
 const copyCmdLongDescription = `
 Copies source data to a destination location. The supported directions are:
   - local <-> Azure Blob (SAS or OAuth authentication)
-  - local <-> Azure Files (Share/directory SAS authentication)
+  - local <-> Azure Files (Share/directory SAS or OAuth authentication)
   - local <-> ADLS Gen 2 (SAS, OAuth, or SharedKey authentication)
-  - Azure Blob (SAS or public) -> Azure Blob (SAS or OAuth authentication)
-  - ADLS Gen 2 (SAS or public) -> ADLS Gen 2 (SAS or OAuth authentication)
+  - Azure Blob (SAS, OAuth or public authentication) -> Azure Blob (SAS or OAuth authentication)
   - ADLS Gen2 (SAS or OAuth authentication) <-> ADLS Gen2 (SAS or OAuth authentication)
   - ADLS Gen2 (SAS or OAuth authentication) <-> Azure Blob (SAS or OAuth authentication)
-  - Azure Blob (SAS or public) -> Azure Files (SAS)
-  - Azure Files (SAS) -> Azure Files (SAS)
-  - Azure Files (SAS) -> Azure Blob (SAS or OAuth authentication)
+  - Azure Blob (SAS, OAuth or public) -> Azure Files (SAS or OAuth authentication)
+  - Azure Files (SAS or OAuth authentication) -> Azure Files (SAS or OAuth authentication)
+  - Azure Files (SAS or OAuth authentication) -> Azure Blob (SAS or OAuth authentication)
   - AWS S3 (Access Key) -> Azure Block Blob (SAS or OAuth authentication)
   - Google Cloud Storage (Service Account Key) -> Azure Block Blob (SAS or OAuth authentication)
 
 Please refer to the examples for more information.
 
 Advanced:
+AzCopy does not support modifications to the source or destination during a transfer. 
 
 AzCopy automatically detects the content type of the files when uploading from the local disk, based on the file extension or content (if no extension is specified).
 
@@ -427,6 +427,7 @@ The sync command differs from the copy command in several ways:
   3. If the 'deleteDestination' flag is set to true or prompt, then sync will delete files and blobs at the destination that are not present at the source.
 
 Advanced:
+AzCopy does not support modifications to the source or destination during a transfer. 
 
 Please note that if you don't specify a file extension, AzCopy automatically detects the content type of the files when uploading from the local disk, based on the file extension or content.
 

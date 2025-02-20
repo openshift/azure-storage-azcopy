@@ -1,10 +1,11 @@
 package e2etest
 
 import (
+	"strconv"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	blobsas "github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/sas"
 	"github.com/Azure/azure-storage-azcopy/v10/common"
-	"strconv"
 )
 
 func init() {
@@ -27,7 +28,7 @@ func (s *RemoveSuite) Scenario_SingleFileRemoveBlobFSEncodedPath(svm *ScenarioVa
 	srcService := acct.GetService(svm, ResolveVariation(svm, []common.Location{common.ELocation.BlobFS()}))
 
 	svm.InsertVariationSeparator(":")
-	body := NewRandomObjectContentContainer(svm, SizeFromString("0K"))
+	body := NewRandomObjectContentContainer(SizeFromString("0K"))
 	// Scale up from service to object
 	srcObj := CreateResource[ObjectResourceManager](svm, srcService, ResourceDefinitionObject{
 		ObjectName: pointerTo("%23%25%3F"),
@@ -70,7 +71,7 @@ func (s *RemoveSuite) Scenario_EmptySASErrorCodes(svm *ScenarioVariationManager)
 		})
 
 	// Validate that the stdout contains these error URLs
-	ValidateErrorOutput(svm, stdout, "https://aka.ms/AzCopyError/NoAuthenticationInformation")
+	ValidateMessageOutput(svm, stdout, "https://aka.ms/AzCopyError/NoAuthenticationInformation", true)
 }
 
 func (s *RemoveSuite) Scenario_RemoveVirtualDirectory(svm *ScenarioVariationManager) {
@@ -81,7 +82,7 @@ func (s *RemoveSuite) Scenario_RemoveVirtualDirectory(svm *ScenarioVariationMana
 	srcObjs := make(ObjectResourceMappingFlat)
 	for i := range 5 {
 		name := "dir_5_files/test" + strconv.Itoa(i) + ".txt"
-		obj := ResourceDefinitionObject{ObjectName: pointerTo(name), Body: NewRandomObjectContentContainer(svm, SizeFromString("1K"))}
+		obj := ResourceDefinitionObject{ObjectName: pointerTo(name), Body: NewRandomObjectContentContainer(SizeFromString("1K"))}
 		CreateResource[ObjectResourceManager](svm, srcContainer, obj)
 		obj.Body = nil
 		obj.ObjectShouldExist = to.Ptr(false)

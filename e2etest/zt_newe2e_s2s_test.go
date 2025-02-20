@@ -1,9 +1,10 @@
 package e2etest
 
 import (
+	"strconv"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-storage-azcopy/v10/common"
-	"strconv"
 )
 
 func init() {
@@ -17,7 +18,7 @@ func (s *S2STestSuite) Scenario_BlobDestinationSizes(svm *ScenarioVariationManag
 	dst := common.ELocation.Blob()
 	size := ResolveVariation(svm, []int64{0, common.KiloByte, 63 * common.MegaByte})
 	fileName := "test_copy.txt"
-	body := NewRandomObjectContentContainer(svm, size)
+	body := NewRandomObjectContentContainer(size)
 
 	// TODO : Add S3 to source
 	srcContainer := CreateResource[ContainerResourceManager](svm, GetRootResource(svm, src), ResourceDefinitionContainer{})
@@ -47,7 +48,7 @@ func (s *S2STestSuite) Scenario_BlobFile1KB(svm *ScenarioVariationManager) {
 	dst := common.ELocation.File()
 	size := common.KiloByte
 	fileName := "test_copy.txt"
-	body := NewRandomObjectContentContainer(svm, int64(size))
+	body := NewRandomObjectContentContainer(int64(size))
 
 	// TODO : Add S3 to source
 	srcContainer := CreateResource[ContainerResourceManager](svm, GetRootResource(svm, src), ResourceDefinitionContainer{})
@@ -77,7 +78,7 @@ func (s *S2STestSuite) Scenario_SingleFileCopyBlobTypeVariations(svm *ScenarioVa
 	destBlobType := ResolveVariation(svm, []blob.BlobType{blob.BlobTypeBlockBlob, blob.BlobTypePageBlob, blob.BlobTypeAppendBlob})
 
 	fileName := "test_512b_copy.txt"
-	body := NewRandomObjectContentContainer(svm, 512)
+	body := NewRandomObjectContentContainer(512)
 
 	srcContainer := CreateResource[ContainerResourceManager](svm, GetRootResource(svm, common.ELocation.Blob()), ResourceDefinitionContainer{})
 	srcObj := srcContainer.GetObject(svm, fileName, common.EEntityType.File())
@@ -111,7 +112,7 @@ func (s *S2STestSuite) Scenario_SingleFilePropertyMetadata(svm *ScenarioVariatio
 
 	srcContainer := CreateResource[ContainerResourceManager](svm, GetRootResource(svm, ResolveVariation(svm, []common.Location{common.ELocation.Blob(), common.ELocation.File()})), ResourceDefinitionContainer{})
 	srcObj := srcContainer.GetObject(svm, fileName, common.EEntityType.File())
-	srcBody := NewRandomObjectContentContainer(svm, 0)
+	srcBody := NewRandomObjectContentContainer(0)
 	srcProps := ObjectProperties{
 		Metadata: common.Metadata{"Author": pointerTo("gapra"), "Viewport": pointerTo("width"), "Description": pointerTo("test file")},
 		HTTPHeaders: contentHeaders{
@@ -147,7 +148,7 @@ func (s *S2STestSuite) Scenario_SingleFilePropertyMetadata(svm *ScenarioVariatio
 func (s *S2STestSuite) Scenario_BlockBlobBlockBlob(svm *ScenarioVariationManager) {
 	fileName := "test_copy.txt"
 	size := ResolveVariation(svm, []int64{0, 1, 8*common.MegaByte - 1, 8 * common.MegaByte, 8*common.MegaByte + 1})
-	body := NewRandomObjectContentContainer(svm, size)
+	body := NewRandomObjectContentContainer(size)
 
 	srcObj := CreateResource[ContainerResourceManager](svm, GetRootResource(svm, common.ELocation.Blob()), ResourceDefinitionContainer{}).
 		GetObject(svm, fileName, common.EEntityType.File())
@@ -180,7 +181,7 @@ func (s *S2STestSuite) Scenario_BlockBlobBlockBlob(svm *ScenarioVariationManager
 func (s *S2STestSuite) Scenario_BlockBlobBlockBlobNoPreserveTier(svm *ScenarioVariationManager) {
 	fileName := "test_copy.txt"
 	size := int64(4*common.MegaByte + 1)
-	body := NewRandomObjectContentContainer(svm, size)
+	body := NewRandomObjectContentContainer(size)
 
 	srcObj := CreateResource[ContainerResourceManager](svm, GetRootResource(svm, common.ELocation.Blob()), ResourceDefinitionContainer{}).
 		GetObject(svm, fileName, common.EEntityType.File())
@@ -214,7 +215,7 @@ func (s *S2STestSuite) Scenario_BlockBlobBlockBlobNoPreserveTier(svm *ScenarioVa
 func (s *S2STestSuite) Scenario_PageBlobToPageBlob(svm *ScenarioVariationManager) {
 	fileName := "test_copy.txt"
 	size := ResolveVariation(svm, []int64{0, 512, common.KiloByte, 4 * common.MegaByte})
-	body := NewRandomObjectContentContainer(svm, size)
+	body := NewRandomObjectContentContainer(size)
 
 	srcObj := CreateResource[ContainerResourceManager](svm, GetRootResource(svm, common.ELocation.Blob()), ResourceDefinitionContainer{}).
 		GetObject(svm, fileName, common.EEntityType.File())
@@ -246,7 +247,7 @@ func (s *S2STestSuite) Scenario_PageBlobToPageBlob(svm *ScenarioVariationManager
 func (s *S2STestSuite) Scenario_AppendBlobToAppendBlob(svm *ScenarioVariationManager) {
 	fileName := "test_copy.txt"
 	size := ResolveVariation(svm, []int64{0, 1, 8*common.MegaByte - 1, 8 * common.MegaByte, 8*common.MegaByte + 1})
-	body := NewRandomObjectContentContainer(svm, size)
+	body := NewRandomObjectContentContainer(size)
 
 	srcObj := CreateResource[ContainerResourceManager](svm, GetRootResource(svm, common.ELocation.Blob()), ResourceDefinitionContainer{}).
 		GetObject(svm, fileName, common.EEntityType.File())
@@ -278,8 +279,8 @@ func (s *S2STestSuite) Scenario_AppendBlobToAppendBlob(svm *ScenarioVariationMan
 func (s *S2STestSuite) Scenario_OverwriteSingleFile(svm *ScenarioVariationManager) {
 	srcFileName := "test_1kb_copy.txt"
 	dstFileName := "test_copy.txt"
-	srcBody := NewRandomObjectContentContainer(svm, common.KiloByte)
-	dstBody := NewRandomObjectContentContainer(svm, 2*common.KiloByte)
+	srcBody := NewRandomObjectContentContainer(common.KiloByte)
+	dstBody := NewRandomObjectContentContainer(2 * common.KiloByte)
 
 	// TODO : Add S3 to source
 	srcContainer := CreateResource[ContainerResourceManager](svm, GetRootResource(svm, ResolveVariation(svm, []common.Location{common.ELocation.Blob(), common.ELocation.File()})), ResourceDefinitionContainer{})
@@ -309,8 +310,8 @@ func (s *S2STestSuite) Scenario_OverwriteSingleFile(svm *ScenarioVariationManage
 func (s *S2STestSuite) Scenario_NonOverwriteSingleFile(svm *ScenarioVariationManager) {
 	srcFileName := "test_1kb_copy.txt"
 	dstFileName := "test_copy.txt"
-	srcBody := NewRandomObjectContentContainer(svm, common.KiloByte)
-	dstBody := NewRandomObjectContentContainer(svm, 2*common.KiloByte)
+	srcBody := NewRandomObjectContentContainer(common.KiloByte)
+	dstBody := NewRandomObjectContentContainer(2 * common.KiloByte)
 
 	// TODO : Add S3 to source
 	srcContainer := CreateResource[ContainerResourceManager](svm, GetRootResource(svm, ResolveVariation(svm, []common.Location{common.ELocation.Blob(), common.ELocation.File()})), ResourceDefinitionContainer{})
@@ -340,7 +341,7 @@ func (s *S2STestSuite) Scenario_NonOverwriteSingleFile(svm *ScenarioVariationMan
 func (s *S2STestSuite) Scenario_BlobBlobOAuth(svm *ScenarioVariationManager) {
 	fileName := "test_copy.txt"
 	size := int64(17) * common.MegaByte
-	body := NewRandomObjectContentContainer(svm, size)
+	body := NewRandomObjectContentContainer(size)
 
 	srcContainer := CreateResource[ContainerResourceManager](svm, GetRootResource(svm, common.ELocation.Blob()), ResourceDefinitionContainer{})
 	srcObj := srcContainer.GetObject(svm, fileName, common.EEntityType.File())
@@ -374,7 +375,7 @@ func (s *S2STestSuite) Scenario_S2SContainerSingleFilePropertyAndMetadata(svm *S
 	dstContainer := CreateResource[ContainerResourceManager](svm, GetRootResource(svm, common.ELocation.Blob()), ResourceDefinitionContainer{})
 
 	srcObj := srcContainer.GetObject(svm, fileName, common.EEntityType.File())
-	srcBody := NewRandomObjectContentContainer(svm, 0)
+	srcBody := NewRandomObjectContentContainer(0)
 	srcProps := ObjectProperties{
 		Metadata: common.Metadata{"Author": pointerTo("gapra"), "Viewport": pointerTo("width"), "Description": pointerTo("test file")},
 		HTTPHeaders: contentHeaders{
@@ -425,7 +426,7 @@ func (s *S2STestSuite) Scenario_S2SContainerSingleFileStripTopDir(svm *ScenarioV
 	dstContainer := CreateResource[ContainerResourceManager](svm, GetRootResource(svm, common.ELocation.Blob()), ResourceDefinitionContainer{})
 
 	srcObj := srcContainer.GetObject(svm, fileName, common.EEntityType.File())
-	srcBody := NewRandomObjectContentContainer(svm, 0)
+	srcBody := NewRandomObjectContentContainer(0)
 	srcObj.Create(svm, srcBody, ObjectProperties{})
 
 	dstObj := dstContainer.GetObject(svm, fileName, common.EEntityType.File())
@@ -473,7 +474,7 @@ func (s *S2STestSuite) Scenario_S2SDirectoryMultipleFiles(svm *ScenarioVariation
 		}
 		for i := range 10 {
 			name := dir + "/test" + strconv.Itoa(i) + ".txt"
-			body := NewRandomObjectContentContainer(svm, SizeFromString("1K"))
+			body := NewRandomObjectContentContainer(SizeFromString("1K"))
 			obj := ResourceDefinitionObject{ObjectName: pointerTo(name), Body: body}
 			CreateResource[ObjectResourceManager](svm, srcContainer, obj)
 			dstObj := ResourceDefinitionObject{ObjectName: pointerTo("dir_file_copy_test/" + name), Body: body}
@@ -527,7 +528,7 @@ func (s *S2STestSuite) Scenario_S2SDirectoryMultipleFilesStripTopDirRecursive(sv
 		}
 		for i := range 10 {
 			name := dir + "/test" + strconv.Itoa(i) + ".txt"
-			body := NewRandomObjectContentContainer(svm, SizeFromString("1K"))
+			body := NewRandomObjectContentContainer(SizeFromString("1K"))
 			obj := ResourceDefinitionObject{ObjectName: pointerTo(name), Body: body}
 			CreateResource[ObjectResourceManager](svm, srcContainer, obj)
 			dstObj := ResourceDefinitionObject{ObjectName: pointerTo(name), Body: body}
@@ -584,7 +585,7 @@ func (s *S2STestSuite) Scenario_S2SDirectoryMultipleFilesStripTopDirNonRecursive
 		}
 		for i := range 10 {
 			name := dir + "/test" + strconv.Itoa(i) + ".txt"
-			body := NewRandomObjectContentContainer(svm, SizeFromString("1K"))
+			body := NewRandomObjectContentContainer(SizeFromString("1K"))
 			obj := ResourceDefinitionObject{ObjectName: pointerTo(name), Body: body}
 			CreateResource[ObjectResourceManager](svm, srcContainer, obj)
 			if j == 0 {
@@ -618,4 +619,34 @@ func (s *S2STestSuite) Scenario_S2SDirectoryMultipleFilesStripTopDirNonRecursive
 	ValidateResource[ContainerResourceManager](svm, dstContainer, ResourceDefinitionContainer{
 		Objects: dstObjs,
 	}, true)
+}
+
+func (s *S2STestSuite) Scenario_SystemContainerCopy(svm *ScenarioVariationManager) {
+	azCopyVerb := ResolveVariation(svm, []AzCopyVerb{AzCopyVerbCopy, AzCopyVerbSync})
+
+	dstObj := GetAccount(svm, PrimaryStandardAcct).GetService(svm, common.ELocation.Blob()).GetContainer("$logs")
+	srcObj := CreateResource[ObjectResourceManager](svm, GetRootResource(svm, ResolveVariation(svm, []common.Location{common.ELocation.Local(), common.ELocation.Blob()})), ResourceDefinitionObject{})
+
+	sasOpts := GenericAccountSignatureValues{}
+
+	stdOut, _ := RunAzCopy(
+		svm,
+		AzCopyCommand{
+			Verb: azCopyVerb,
+			Targets: []ResourceManager{
+				TryApplySpecificAuthType(srcObj, EExplicitCredentialType.SASToken(), svm, CreateAzCopyTargetOptions{
+					SASTokenOptions: sasOpts,
+				}),
+				TryApplySpecificAuthType(dstObj, EExplicitCredentialType.SASToken(), svm, CreateAzCopyTargetOptions{
+					SASTokenOptions: sasOpts,
+				}),
+			},
+			Flags: CopyFlags{
+				CopySyncCommonFlags: CopySyncCommonFlags{
+					Recursive: pointerTo(true),
+				},
+			},
+			ShouldFail: true,
+		})
+	ValidateMessageOutput(svm, stdOut, "cannot copy to system container", true)
 }

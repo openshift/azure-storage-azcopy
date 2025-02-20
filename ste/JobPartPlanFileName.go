@@ -23,7 +23,11 @@ func (jppfn *JobPartPlanFileName) Exists() bool {
 }
 
 func (jppfn *JobPartPlanFileName) GetJobPartPlanPath() string {
-	return fmt.Sprintf("%s%s%s", common.AzcopyJobPlanFolder, common.AZCOPY_PATH_SEPARATOR_STRING, string(*jppfn))
+	if common.AzcopyJobPlanFolder != "" {
+		return fmt.Sprintf("%s%s%s", common.AzcopyJobPlanFolder, common.AZCOPY_PATH_SEPARATOR_STRING, string(*jppfn))
+	} else {
+		return string(*jppfn)
+	}
 }
 
 const JobPartPlanFileNameFormat = "%v--%05d.steV%d"
@@ -42,8 +46,8 @@ func (jpfn JobPartPlanFileName) Parse() (jobID common.JobID, partNumber common.P
 	jpfnSplit := strings.Split(string(jpfn), "--")
 	jobId, err := common.ParseJobID(jpfnSplit[0])
 	if err != nil {
-		err = fmt.Errorf("failed to parse the JobId from JobPartFileName %s. Failed with error %s", string(jpfn), err.Error()) //nolint:staticcheck
-		// TODO: return here on error? or ignore
+		err = fmt.Errorf("failed to parse the JobId from JobPartFileName %s. Failed with error %w", string(jpfn), err) //nolint:staticcheck
+		common.GetLifecycleMgr().Warn(err.Error())
 	}
 	jobID = jobId
 	n, err := fmt.Sscanf(jpfnSplit[1], "%05d.steV%d", &partNumber, &dataSchemaVersion)
@@ -140,7 +144,7 @@ func (jpfn JobPartPlanFileName) Create(order common.CopyJobPartOrderRequest) {
 	// planPathname := planDir + "/" + string(jpfn)
 	file, err := os.Create(jpfn.GetJobPartPlanPath())
 	if err != nil {
-		panic(fmt.Errorf("couldn't create job part plan file %q: %v", jpfn, err))
+		panic(fmt.Errorf("couldn't create job part plan file %q: %w", jpfn, err))
 	}
 	defer file.Close()
 

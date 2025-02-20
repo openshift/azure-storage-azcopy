@@ -40,8 +40,8 @@ var lgCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		loginCmdArg.certPass = glcm.GetEnvironmentVariable(common.EEnvironmentVariable.CertificatePassword())
-		loginCmdArg.clientSecret = glcm.GetEnvironmentVariable(common.EEnvironmentVariable.ClientSecret())
+		loginCmdArg.certPass = common.GetEnvironmentVariable(common.EEnvironmentVariable.CertificatePassword())
+		loginCmdArg.clientSecret = common.GetEnvironmentVariable(common.EEnvironmentVariable.ClientSecret())
 		loginCmdArg.persistToken = true
 
 		if loginCmdArg.certPass != "" || loginCmdArg.clientSecret != "" {
@@ -116,9 +116,10 @@ type loginCmdArgs struct {
 
 func (lca loginCmdArgs) process() error {
 	// Login type consolidation to allow backward compatibility.
-	if lca.servicePrincipal || lca.identity {
-		glcm.Warn("The flags --service-principal and --identity will be deprecated in a future release. Please use --login-type=SPN or --login-type=MSI instead.")
-	}
+	// Commenting the warning message till we decide on when to deprecate these options
+	// if lca.servicePrincipal || lca.identity {
+	// 	glcm.Warn("The flags --service-principal and --identity will be deprecated in a future release. Please use --login-type=SPN or --login-type=MSI instead.")
+	// }
 	if lca.servicePrincipal {
 		lca.loginType = common.EAutoLoginType.SPN().String()
 	} else if lca.identity {
