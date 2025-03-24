@@ -18,7 +18,7 @@ require (
 	github.com/spf13/cobra v1.8.1
 	github.com/wastore/keyctl v0.3.1
 	golang.org/x/crypto v0.31.0 // indirect
-	golang.org/x/oauth2 v0.23.0
+	golang.org/x/oauth2 v0.27.0
 	golang.org/x/sync v0.10.0
 	golang.org/x/sys v0.28.0
 	google.golang.org/api v0.202.0
@@ -96,4 +96,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-go 1.22.7
+go 1.23.0
+
+toolchain go1.24.1
