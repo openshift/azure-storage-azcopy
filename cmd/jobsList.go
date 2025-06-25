@@ -68,7 +68,7 @@ func init() {
 			if err == nil {
 				glcm.Exit(nil, common.EExitCode.Success())
 			} else {
-				glcm.Error(err.Error())
+				glcm.Error(fmt.Sprintf("failed to perform jobs list command due to error: %s", err.Error()))
 			}
 		},
 	}
@@ -76,7 +76,7 @@ func init() {
 	jobsCmd.AddCommand(lsCmd)
 
 	lsCmd.PersistentFlags().StringVar(&commandLineInput.withStatus, "with-status", "All",
-		"List the jobs with given status, available values: All, Cancelled, Failed, InProgress, Completed,"+
+		"List the jobs with the specified status. Available values include: All, Cancelled, Failed, InProgress, Completed,"+
 			" CompletedWithErrors, CompletedWithFailures, CompletedWithErrorsAndSkipped")
 }
 
