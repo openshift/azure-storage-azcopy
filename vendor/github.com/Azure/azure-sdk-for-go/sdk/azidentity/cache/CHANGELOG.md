@@ -1,5 +1,10 @@
 # Release History
 
+## 0.3.2 (2025-01-15)
+
+### Other Changes
+* Upgraded dependencies
+
 ## 0.3.1 (2024-11-05)
 
 ### Bugs Fixed

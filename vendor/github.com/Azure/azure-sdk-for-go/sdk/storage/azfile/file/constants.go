@@ -41,6 +41,28 @@ func PossibleCopyStatusTypeValues() []CopyStatusType {
 	return generated.PossibleCopyStatusTypeValues()
 }
 
+// NFSFileType specifies the type of the file or directory.
+type NFSFileType = generated.NFSFileType
+
+// ModeCopyMode specifies the mode of the file or directory.
+type ModeCopyMode = generated.ModeCopyMode
+
+// OwnerCopyMode specifies the copy mode source or override.
+type OwnerCopyMode = generated.OwnerCopyMode
+
+const (
+	// NFSFileTypeRegular Default and only value for the parameter NFS File Type.
+	NFSFileTypeRegular   NFSFileType = generated.NFSFileTypeRegular
+	NFSFileTypeDirectory NFSFileType = generated.NFSFileTypeDirectory
+	NFSFileTypeSymlink   NFSFileType = generated.NFSFileTypeSymLink
+
+	OwnerCopyModeOverride OwnerCopyMode = generated.OwnerCopyModeOverride
+	OwnerCopyModeSource   OwnerCopyMode = generated.OwnerCopyModeSource
+
+	ModeCopyModeOverride ModeCopyMode = generated.ModeCopyModeOverride
+	ModeCopyModeSource   ModeCopyMode = generated.ModeCopyModeSource
+)
+
 // PermissionCopyModeType determines the copy behavior of the security descriptor of the file.
 //   - source: The security descriptor on the destination file is copied from the source file.
 //   - override: The security descriptor on the destination file is determined via the x-ms-file-permission or x-ms-file-permission-key header.
@@ -66,6 +88,19 @@ const (
 	RangeWriteTypeUpdate RangeWriteType = generated.FileRangeWriteTypeUpdate
 	RangeWriteTypeClear  RangeWriteType = generated.FileRangeWriteTypeClear
 )
+
+// PermissionFormat contains the format of the file permissions, Can be sddl (Default) or Binary.
+type PermissionFormat = generated.FilePermissionFormat
+
+const (
+	FilePermissionFormatBinary PermissionFormat = generated.FilePermissionFormatBinary
+	FilePermissionFormatSddl   PermissionFormat = generated.FilePermissionFormatSddl
+)
+
+// PossibleFilePermissionFormatValues returns the possible values for the FilePermissionFormat const type.
+func PossibleFilePermissionFormatValues() []PermissionFormat {
+	return generated.PossibleFilePermissionFormatValues()
+}
 
 // PossibleRangeWriteTypeValues returns the possible values for the RangeWriteType const type.
 func PossibleRangeWriteTypeValues() []RangeWriteType {

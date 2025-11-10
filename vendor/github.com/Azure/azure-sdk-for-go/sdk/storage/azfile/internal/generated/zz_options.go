@@ -63,18 +63,34 @@ type DirectoryClientCreateOptions struct {
 	// Last write time for the file/directory. Default value: Now.
 	FileLastWriteTime *string
 
+	// Optional, NFS only. The file mode of the file or directory
+	FileMode *string
+
 	// If specified the permission (security descriptor) shall be set for the directory/file. This header can be used if Permission
 	// size is <= 8KB, else x-ms-file-permission-key header shall be used. Default
 	// value: Inherit. If SDDL is specified as input, it must have owner, group and dacl. Note: Only one of the x-ms-file-permission
 	// or x-ms-file-permission-key should be specified.
 	FilePermission *string
 
+	// Optional. Available for version 2023-06-01 and later. Specifies the format in which the permission is returned. Acceptable
+	// values are SDDL or binary. If x-ms-file-permission-format is unspecified or
+	// explicitly set to SDDL, the permission is returned in SDDL format. If x-ms-file-permission-format is explicitly set to
+	// binary, the permission is returned as a base64 string representing the binary
+	// encoding of the permission
+	FilePermissionFormat *FilePermissionFormat
+
 	// Key of the permission to be set for the directory/file. Note: Only one of the x-ms-file-permission or x-ms-file-permission-key
 	// should be specified.
 	FilePermissionKey *string
 
+	// Optional, NFS only. The owning group of the file or directory.
+	Group *string
+
 	// A name-value pair to associate with a file storage object.
 	Metadata map[string]*string
+
+	// Optional, NFS only. The owner of the file or directory.
+	Owner *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for File Service Operations.
 	// [https://docs.microsoft.com/en-us/rest/api/storageservices/Setting-Timeouts-for-File-Service-Operations?redirectedfrom=MSDN]
@@ -178,6 +194,13 @@ type DirectoryClientRenameOptions struct {
 	// or x-ms-file-permission-key should be specified.
 	FilePermission *string
 
+	// Optional. Available for version 2023-06-01 and later. Specifies the format in which the permission is returned. Acceptable
+	// values are SDDL or binary. If x-ms-file-permission-format is unspecified or
+	// explicitly set to SDDL, the permission is returned in SDDL format. If x-ms-file-permission-format is explicitly set to
+	// binary, the permission is returned as a base64 string representing the binary
+	// encoding of the permission
+	FilePermissionFormat *FilePermissionFormat
+
 	// Key of the permission to be set for the directory/file. Note: Only one of the x-ms-file-permission or x-ms-file-permission-key
 	// should be specified.
 	FilePermissionKey *string
@@ -227,15 +250,31 @@ type DirectoryClientSetPropertiesOptions struct {
 	// Last write time for the file/directory. Default value: Now.
 	FileLastWriteTime *string
 
+	// Optional, NFS only. The file mode of the file or directory
+	FileMode *string
+
 	// If specified the permission (security descriptor) shall be set for the directory/file. This header can be used if Permission
 	// size is <= 8KB, else x-ms-file-permission-key header shall be used. Default
 	// value: Inherit. If SDDL is specified as input, it must have owner, group and dacl. Note: Only one of the x-ms-file-permission
 	// or x-ms-file-permission-key should be specified.
 	FilePermission *string
 
+	// Optional. Available for version 2023-06-01 and later. Specifies the format in which the permission is returned. Acceptable
+	// values are SDDL or binary. If x-ms-file-permission-format is unspecified or
+	// explicitly set to SDDL, the permission is returned in SDDL format. If x-ms-file-permission-format is explicitly set to
+	// binary, the permission is returned as a base64 string representing the binary
+	// encoding of the permission
+	FilePermissionFormat *FilePermissionFormat
+
 	// Key of the permission to be set for the directory/file. Note: Only one of the x-ms-file-permission or x-ms-file-permission-key
 	// should be specified.
 	FilePermissionKey *string
+
+	// Optional, NFS only. The owning group of the file or directory.
+	Group *string
+
+	// Optional, NFS only. The owner of the file or directory.
+	Owner *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for File Service Operations.
 	// [https://docs.microsoft.com/en-us/rest/api/storageservices/Setting-Timeouts-for-File-Service-Operations?redirectedfrom=MSDN]
@@ -292,6 +331,17 @@ type FileClientChangeLeaseOptions struct {
 	Timeout *int32
 }
 
+// FileClientCreateHardLinkOptions contains the optional parameters for the FileClient.CreateHardLink method.
+type FileClientCreateHardLinkOptions struct {
+	// Provides a client-generated, opaque value with a 1 KB character limit that is recorded in the analytics logs when storage
+	// analytics logging is enabled.
+	RequestID *string
+
+	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for File Service Operations.
+	// [https://docs.microsoft.com/en-us/rest/api/storageservices/Setting-Timeouts-for-File-Service-Operations?redirectedfrom=MSDN]
+	Timeout *int32
+}
+
 // FileClientCreateOptions contains the optional parameters for the FileClient.Create method.
 type FileClientCreateOptions struct {
 	// If specified, the provided file attributes shall be set. Default value: ‘Archive’ for file and ‘Directory’ for directory.
@@ -307,18 +357,63 @@ type FileClientCreateOptions struct {
 	// Last write time for the file/directory. Default value: Now.
 	FileLastWriteTime *string
 
+	// Optional, NFS only. The file mode of the file or directory
+	FileMode *string
+
 	// If specified the permission (security descriptor) shall be set for the directory/file. This header can be used if Permission
 	// size is <= 8KB, else x-ms-file-permission-key header shall be used. Default
 	// value: Inherit. If SDDL is specified as input, it must have owner, group and dacl. Note: Only one of the x-ms-file-permission
 	// or x-ms-file-permission-key should be specified.
 	FilePermission *string
 
+	// Optional. Available for version 2023-06-01 and later. Specifies the format in which the permission is returned. Acceptable
+	// values are SDDL or binary. If x-ms-file-permission-format is unspecified or
+	// explicitly set to SDDL, the permission is returned in SDDL format. If x-ms-file-permission-format is explicitly set to
+	// binary, the permission is returned as a base64 string representing the binary
+	// encoding of the permission
+	FilePermissionFormat *FilePermissionFormat
+
 	// Key of the permission to be set for the directory/file. Note: Only one of the x-ms-file-permission or x-ms-file-permission-key
 	// should be specified.
 	FilePermissionKey *string
 
+	// Optional, NFS only. The owning group of the file or directory.
+	Group *string
+
 	// A name-value pair to associate with a file storage object.
 	Metadata map[string]*string
+
+	// Optional, NFS only. Type of the file or directory.
+	NFSFileType *NFSFileType
+
+	// Optional, NFS only. The owner of the file or directory.
+	Owner *string
+
+	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for File Service Operations.
+	// [https://docs.microsoft.com/en-us/rest/api/storageservices/Setting-Timeouts-for-File-Service-Operations?redirectedfrom=MSDN]
+	Timeout *int32
+}
+
+// FileClientCreateSymbolicLinkOptions contains the optional parameters for the FileClient.CreateSymbolicLink method.
+type FileClientCreateSymbolicLinkOptions struct {
+	// Creation time for the file/directory. Default value: Now.
+	FileCreationTime *string
+
+	// Last write time for the file/directory. Default value: Now.
+	FileLastWriteTime *string
+
+	// Optional, NFS only. The owning group of the file or directory.
+	Group *string
+
+	// A name-value pair to associate with a file storage object.
+	Metadata map[string]*string
+
+	// Optional, NFS only. The owner of the file or directory.
+	Owner *string
+
+	// Provides a client-generated, opaque value with a 1 KB character limit that is recorded in the analytics logs when storage
+	// analytics logging is enabled.
+	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for File Service Operations.
 	// [https://docs.microsoft.com/en-us/rest/api/storageservices/Setting-Timeouts-for-File-Service-Operations?redirectedfrom=MSDN]
@@ -340,6 +435,10 @@ type FileClientDownloadOptions struct {
 	// When this header is set to true and specified together with the Range header, the service returns the MD5 hash for the
 	// range, as long as the range is less than or equal to 4 MB in size.
 	RangeGetContentMD5 *bool
+
+	// Specifies the response content should be returned as a structured message and specifies the message schema version and
+	// properties.
+	StructuredBodyType *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for File Service Operations.
 	// [https://docs.microsoft.com/en-us/rest/api/storageservices/Setting-Timeouts-for-File-Service-Operations?redirectedfrom=MSDN]
@@ -395,6 +494,20 @@ type FileClientGetRangeListOptions struct {
 	Timeout *int32
 }
 
+// FileClientGetSymbolicLinkOptions contains the optional parameters for the FileClient.GetSymbolicLink method.
+type FileClientGetSymbolicLinkOptions struct {
+	// Provides a client-generated, opaque value with a 1 KB character limit that is recorded in the analytics logs when storage
+	// analytics logging is enabled.
+	RequestID *string
+
+	// The snapshot parameter is an opaque DateTime value that, when present, specifies the share snapshot to query.
+	Sharesnapshot *string
+
+	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for File Service Operations.
+	// [https://docs.microsoft.com/en-us/rest/api/storageservices/Setting-Timeouts-for-File-Service-Operations?redirectedfrom=MSDN]
+	Timeout *int32
+}
+
 // FileClientListHandlesOptions contains the optional parameters for the FileClient.ListHandles method.
 type FileClientListHandlesOptions struct {
 	// A string value that identifies the portion of the list to be returned with the next list operation. The operation returns
@@ -433,6 +546,13 @@ type FileClientRenameOptions struct {
 	// value: Inherit. If SDDL is specified as input, it must have owner, group and dacl. Note: Only one of the x-ms-file-permission
 	// or x-ms-file-permission-key should be specified.
 	FilePermission *string
+
+	// Optional. Available for version 2023-06-01 and later. Specifies the format in which the permission is returned. Acceptable
+	// values are SDDL or binary. If x-ms-file-permission-format is unspecified or
+	// explicitly set to SDDL, the permission is returned in SDDL format. If x-ms-file-permission-format is explicitly set to
+	// binary, the permission is returned as a base64 string representing the binary
+	// encoding of the permission
+	FilePermissionFormat *FilePermissionFormat
 
 	// Key of the permission to be set for the directory/file. Note: Only one of the x-ms-file-permission or x-ms-file-permission-key
 	// should be specified.
@@ -477,15 +597,31 @@ type FileClientSetHTTPHeadersOptions struct {
 	// Last write time for the file/directory. Default value: Now.
 	FileLastWriteTime *string
 
+	// Optional, NFS only. The file mode of the file or directory
+	FileMode *string
+
 	// If specified the permission (security descriptor) shall be set for the directory/file. This header can be used if Permission
 	// size is <= 8KB, else x-ms-file-permission-key header shall be used. Default
 	// value: Inherit. If SDDL is specified as input, it must have owner, group and dacl. Note: Only one of the x-ms-file-permission
 	// or x-ms-file-permission-key should be specified.
 	FilePermission *string
 
+	// Optional. Available for version 2023-06-01 and later. Specifies the format in which the permission is returned. Acceptable
+	// values are SDDL or binary. If x-ms-file-permission-format is unspecified or
+	// explicitly set to SDDL, the permission is returned in SDDL format. If x-ms-file-permission-format is explicitly set to
+	// binary, the permission is returned as a base64 string representing the binary
+	// encoding of the permission
+	FilePermissionFormat *FilePermissionFormat
+
 	// Key of the permission to be set for the directory/file. Note: Only one of the x-ms-file-permission or x-ms-file-permission-key
 	// should be specified.
 	FilePermissionKey *string
+
+	// Optional, NFS only. The owning group of the file or directory.
+	Group *string
+
+	// Optional, NFS only. The owner of the file or directory.
+	Owner *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for File Service Operations.
 	// [https://docs.microsoft.com/en-us/rest/api/storageservices/Setting-Timeouts-for-File-Service-Operations?redirectedfrom=MSDN]
@@ -504,18 +640,45 @@ type FileClientSetMetadataOptions struct {
 
 // FileClientStartCopyOptions contains the optional parameters for the FileClient.StartCopy method.
 type FileClientStartCopyOptions struct {
+	// Optional, NFS only. The file mode of the file or directory
+	FileMode *string
+
+	// NFS only. Applicable only when the copy source is a File. Determines the copy behavior of the mode bits of the file. source:
+	// The mode on the destination file is copied from the source file. override:
+	// The mode on the destination file is determined via the x-ms-mode header.
+	FileModeCopyMode *ModeCopyMode
+
+	// NFS only. Determines the copy behavior of the owner user identifier (UID) and group identifier (GID) of the file. source:
+	// The owner user identifier (UID) and group identifier (GID) on the destination
+	// file is copied from the source file. override: The owner user identifier (UID) and group identifier (GID) on the destination
+	// file is determined via the x-ms-owner and x-ms-group headers.
+	FileOwnerCopyMode *OwnerCopyMode
+
 	// If specified the permission (security descriptor) shall be set for the directory/file. This header can be used if Permission
 	// size is <= 8KB, else x-ms-file-permission-key header shall be used. Default
 	// value: Inherit. If SDDL is specified as input, it must have owner, group and dacl. Note: Only one of the x-ms-file-permission
 	// or x-ms-file-permission-key should be specified.
 	FilePermission *string
 
+	// Optional. Available for version 2023-06-01 and later. Specifies the format in which the permission is returned. Acceptable
+	// values are SDDL or binary. If x-ms-file-permission-format is unspecified or
+	// explicitly set to SDDL, the permission is returned in SDDL format. If x-ms-file-permission-format is explicitly set to
+	// binary, the permission is returned as a base64 string representing the binary
+	// encoding of the permission
+	FilePermissionFormat *FilePermissionFormat
+
 	// Key of the permission to be set for the directory/file. Note: Only one of the x-ms-file-permission or x-ms-file-permission-key
 	// should be specified.
 	FilePermissionKey *string
 
+	// Optional, NFS only. The owning group of the file or directory.
+	Group *string
+
 	// A name-value pair to associate with a file storage object.
 	Metadata map[string]*string
+
+	// Optional, NFS only. The owner of the file or directory.
+	Owner *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for File Service Operations.
 	// [https://docs.microsoft.com/en-us/rest/api/storageservices/Setting-Timeouts-for-File-Service-Operations?redirectedfrom=MSDN]
@@ -551,6 +714,13 @@ type FileClientUploadRangeOptions struct {
 
 	// If the file last write time should be preserved or overwritten
 	FileLastWrittenMode *FileLastWrittenMode
+
+	// Required if the request body is a structured message. Specifies the message schema version and properties.
+	StructuredBodyType *string
+
+	// Required if the request body is a structured message. Specifies the length of the blob/file content inside the message
+	// body. Will always be smaller than Content-Length.
+	StructuredContentLength *int64
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for File Service Operations.
 	// [https://docs.microsoft.com/en-us/rest/api/storageservices/Setting-Timeouts-for-File-Service-Operations?redirectedfrom=MSDN]
@@ -664,7 +834,8 @@ type ShareClientChangeLeaseOptions struct {
 // ShareClientCreateOptions contains the optional parameters for the ShareClient.Create method.
 type ShareClientCreateOptions struct {
 	// Specifies the access tier of the share.
-	AccessTier *ShareAccessTier
+	AccessTier                           *ShareAccessTier
+	EnableSnapshotVirtualDirectoryAccess *bool
 
 	// Protocols to enable on the share.
 	EnabledProtocols *string
@@ -672,11 +843,32 @@ type ShareClientCreateOptions struct {
 	// A name-value pair to associate with a file storage object.
 	Metadata map[string]*string
 
+	// Optional. Boolean. Default if not specified is false. This property enables paid bursting.
+	PaidBurstingEnabled *bool
+
+	// Optional. Integer. Default if not specified is the maximum throughput the file share can support. Current maximum for a
+	// file share is 10,340 MiB/sec.
+	PaidBurstingMaxBandwidthMibps *int64
+
+	// Optional. Integer. Default if not specified is the maximum IOPS the file share can support. Current maximum for a file
+	// share is 102,400 IOPS.
+	PaidBurstingMaxIops *int64
+
 	// Specifies the maximum size of the share, in gigabytes.
 	Quota *int32
 
 	// Root squash to set on the share. Only valid for NFS shares.
 	RootSquash *ShareRootSquash
+
+	// Optional. Supported in version 2025-01-05 and later. Only allowed for provisioned v2 file shares. Specifies the provisioned
+	// bandwidth of the share, in mebibytes per second (MiBps). If this is not
+	// specified, the provisioned bandwidth is set to value calculated based on recommendation formula.
+	ShareProvisionedBandwidthMibps *int64
+
+	// Optional. Supported in version 2025-01-05 and later. Only allowed for provisioned v2 file shares. Specifies the provisioned
+	// number of input/output operations per second (IOPS) of the share. If this is
+	// not specified, the provisioned IOPS is set to value calculated based on recommendation formula.
+	ShareProvisionedIops *int64
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for File Service Operations.
 	// [https://docs.microsoft.com/en-us/rest/api/storageservices/Setting-Timeouts-for-File-Service-Operations?redirectedfrom=MSDN]
@@ -722,6 +914,13 @@ type ShareClientGetAccessPolicyOptions struct {
 
 // ShareClientGetPermissionOptions contains the optional parameters for the ShareClient.GetPermission method.
 type ShareClientGetPermissionOptions struct {
+	// Optional. Available for version 2023-06-01 and later. Specifies the format in which the permission is returned. Acceptable
+	// values are SDDL or binary. If x-ms-file-permission-format is unspecified or
+	// explicitly set to SDDL, the permission is returned in SDDL format. If x-ms-file-permission-format is explicitly set to
+	// binary, the permission is returned as a base64 string representing the binary
+	// encoding of the permission
+	FilePermissionFormat *FilePermissionFormat
+
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for File Service Operations.
 	// [https://docs.microsoft.com/en-us/rest/api/storageservices/Setting-Timeouts-for-File-Service-Operations?redirectedfrom=MSDN]
 	Timeout *int32
@@ -809,13 +1008,35 @@ type ShareClientSetMetadataOptions struct {
 // ShareClientSetPropertiesOptions contains the optional parameters for the ShareClient.SetProperties method.
 type ShareClientSetPropertiesOptions struct {
 	// Specifies the access tier of the share.
-	AccessTier *ShareAccessTier
+	AccessTier                           *ShareAccessTier
+	EnableSnapshotVirtualDirectoryAccess *bool
+
+	// Optional. Boolean. Default if not specified is false. This property enables paid bursting.
+	PaidBurstingEnabled *bool
+
+	// Optional. Integer. Default if not specified is the maximum throughput the file share can support. Current maximum for a
+	// file share is 10,340 MiB/sec.
+	PaidBurstingMaxBandwidthMibps *int64
+
+	// Optional. Integer. Default if not specified is the maximum IOPS the file share can support. Current maximum for a file
+	// share is 102,400 IOPS.
+	PaidBurstingMaxIops *int64
 
 	// Specifies the maximum size of the share, in gigabytes.
 	Quota *int32
 
 	// Root squash to set on the share. Only valid for NFS shares.
 	RootSquash *ShareRootSquash
+
+	// Optional. Supported in version 2025-01-05 and later. Only allowed for provisioned v2 file shares. Specifies the provisioned
+	// bandwidth of the share, in mebibytes per second (MiBps). If this is not
+	// specified, the provisioned bandwidth is set to value calculated based on recommendation formula.
+	ShareProvisionedBandwidthMibps *int64
+
+	// Optional. Supported in version 2025-01-05 and later. Only allowed for provisioned v2 file shares. Specifies the provisioned
+	// number of input/output operations per second (IOPS) of the share. If this is
+	// not specified, the provisioned IOPS is set to value calculated based on recommendation formula.
+	ShareProvisionedIops *int64
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for File Service Operations.
 	// [https://docs.microsoft.com/en-us/rest/api/storageservices/Setting-Timeouts-for-File-Service-Operations?redirectedfrom=MSDN]

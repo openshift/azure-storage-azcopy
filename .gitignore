@@ -1,1 +1,7 @@
-# OpenShift: <carry>: do not use .gitignore from upstream, some entries cause dependencies to be ignored in vendor directory
+# OpenShift: <carry>: do not use entire .gitignore from upstream, some entries cause dependencies to be ignored in vendor directory
+
+# Project executable
+azure-storage-azcopy.exe
+azure-storage-azcopy
+testSuite/testSuite.exe
+*.exe

@@ -62,6 +62,32 @@ func ValidateTags(a Asserter, expected, real map[string]string) {
 	a.Assert("Tags must match", Equal{Deep: true}, expected, real)
 }
 
+func ValidateSkippedSymLinkedCount(a Asserter, stdOut AzCopyStdout, expected uint32) {
+	if dryrunner, ok := a.(DryrunAsserter); ok && dryrunner.Dryrun() {
+		return
+	}
+
+	parsedStdout := GetTypeOrAssert[*AzCopyParsedCopySyncRemoveStdout](a, stdOut)
+	skippedSymlinkedCount := parsedStdout.FinalStatus.SkippedSymlinkCount
+	if skippedSymlinkedCount != expected {
+		a.Error(fmt.Sprintf("expected skipped symlink count (%d) received count (%d)", expected, skippedSymlinkedCount))
+	}
+	return
+}
+
+func ValidateSkippedSpecialFileCount(a Asserter, stdOut AzCopyStdout, expected uint32) {
+	if dryrunner, ok := a.(DryrunAsserter); ok && dryrunner.Dryrun() {
+		return
+	}
+
+	parsedStdout := GetTypeOrAssert[*AzCopyParsedCopySyncRemoveStdout](a, stdOut)
+	skippedSpecialFileCount := parsedStdout.FinalStatus.SkippedSpecialFileCount
+	if skippedSpecialFileCount != expected {
+		a.Error(fmt.Sprintf("expected skipped special file count (%d) received count (%d)", expected, skippedSpecialFileCount))
+	}
+	return
+}
+
 func ValidateResource[T ResourceManager](a Asserter, target T, definition MatchedResourceDefinition[T], validateObjectContent bool) {
 	a.AssertNow("Target resource and definition must not be null", Not{IsNil{}}, a, target, definition)
 	a.AssertNow("Target resource must be at a equal level to the resource definition", Equal{}, target.Level(), definition.DefinitionTarget())
@@ -74,8 +100,10 @@ func ValidateResource[T ResourceManager](a Asserter, target T, definition Matche
 		cmd.ELocationLevel.Container(): func(a Asserter, manager ResourceManager, definition ResourceDefinition) {
 			cRes := manager.(ContainerResourceManager)
 
+			canonPathPrefix := cRes.Canon() + ": "
+
 			if !definition.ShouldExist() {
-				a.AssertNow("container must not exist", Equal{}, cRes.Exists(), false)
+				a.AssertNow(canonPathPrefix+"container must not exist", Equal{}, cRes.Exists(), false)
 				return
 			}
 
@@ -85,10 +113,11 @@ func ValidateResource[T ResourceManager](a Asserter, target T, definition Matche
 			ValidateMetadata(a, vProps.Metadata, cProps.Metadata)
 
 			if manager.Location() == common.ELocation.Blob() || manager.Location() == common.ELocation.BlobFS() {
-				ValidatePropertyPtr(a, "Public access", vProps.BlobContainerProperties.Access, cProps.BlobContainerProperties.Access)
+				ValidatePropertyPtr(a, canonPathPrefix+"Public access", vProps.BlobContainerProperties.Access, cProps.BlobContainerProperties.Access)
 			}
 
-			if manager.Location() == common.ELocation.File() {
+
+			if manager.Location() == common.ELocation.File() || manager.Location() == common.ELocation.FileNFS() {
 				ValidatePropertyPtr(a, "Enabled protocols", vProps.FileContainerProperties.EnabledProtocols, cProps.FileContainerProperties.EnabledProtocols)
 				ValidatePropertyPtr(a, "RootSquash", vProps.FileContainerProperties.RootSquash, cProps.FileContainerProperties.RootSquash)
 				ValidatePropertyPtr(a, "AccessTier", vProps.FileContainerProperties.AccessTier, cProps.FileContainerProperties.AccessTier)
@@ -99,6 +128,8 @@ func ValidateResource[T ResourceManager](a Asserter, target T, definition Matche
 			objMan := manager.(ObjectResourceManager)
 			objDef := definition.(ResourceDefinitionObject)
 
+			canonPathPrefix := objMan.Canon() + ": "
+
 			if !objDef.ShouldExist() {
 				a.Assert(fmt.Sprintf("object %s must not exist", objMan.ObjectName()), Equal{}, objMan.Exists(), false)
 				return
@@ -107,7 +138,7 @@ func ValidateResource[T ResourceManager](a Asserter, target T, definition Matche
 			oProps := objMan.GetProperties(a)
 			vProps := objDef.ObjectProperties
 
-			if validateObjectContent && objMan.EntityType() == common.EEntityType.File() && objDef.Body != nil {
+			if validateObjectContent && (objMan.EntityType() == common.EEntityType.File() || objMan.EntityType() == common.EEntityType.Hardlink()) && objDef.Body != nil {
 				objBody := objMan.Download(a)
 				validationBody := objDef.Body.Reader()
 
@@ -115,41 +146,63 @@ func ValidateResource[T ResourceManager](a Asserter, target T, definition Matche
 				valHash := md5.New()
 
 				_, err := io.Copy(objHash, objBody)
-				a.NoError("hash object body", err)
+				a.NoError(canonPathPrefix+"hash object body", err)
 				_, err = io.Copy(valHash, validationBody)
-				a.NoError("hash validation body", err)
+				a.NoError(canonPathPrefix+"hash validation body", err)
 
-				a.Assert("bodies differ in hash", Equal{Deep: true}, hex.EncodeToString(objHash.Sum(nil)), hex.EncodeToString(valHash.Sum(nil)))
+				a.Assert(canonPathPrefix+"bodies differ in hash", Equal{Deep: true}, hex.EncodeToString(objHash.Sum(nil)), hex.EncodeToString(valHash.Sum(nil)))
+			} else if objMan.EntityType() == common.EEntityType.Symlink() {
+				// Do we have a specified symlink dest or a body?
+				symlinkDest := objDef.SymlinkedFileName
+				if symlinkDest == "" && objDef.Body != nil {
+					buf, err := io.ReadAll(objDef.Body.Reader())
+					a.NoError(canonPathPrefix+"Read symlink body", err)
+					symlinkDest = string(buf)
+				}
+
+				if symlinkDest != "" {
+					linkData := objMan.ReadLink(a)
+					a.Assert(canonPathPrefix+"Symlink mismatch", Equal{}, symlinkDest, linkData)
+				}
 			}
 
 			// properties
 			ValidateMetadata(a, vProps.Metadata, oProps.Metadata)
 
 			// HTTP headers
-			ValidatePropertyPtr(a, "Cache control", vProps.HTTPHeaders.cacheControl, oProps.HTTPHeaders.cacheControl)
-			ValidatePropertyPtr(a, "Content disposition", vProps.HTTPHeaders.contentDisposition, oProps.HTTPHeaders.contentDisposition)
-			ValidatePropertyPtr(a, "Content encoding", vProps.HTTPHeaders.contentEncoding, oProps.HTTPHeaders.contentEncoding)
-			ValidatePropertyPtr(a, "Content language", vProps.HTTPHeaders.contentLanguage, oProps.HTTPHeaders.contentLanguage)
-			ValidatePropertyPtr(a, "Content type", vProps.HTTPHeaders.contentType, oProps.HTTPHeaders.contentType)
+			ValidatePropertyPtr(a, canonPathPrefix+"Cache control", vProps.HTTPHeaders.cacheControl, oProps.HTTPHeaders.cacheControl)
+			ValidatePropertyPtr(a, canonPathPrefix+"Content disposition", vProps.HTTPHeaders.contentDisposition, oProps.HTTPHeaders.contentDisposition)
+			ValidatePropertyPtr(a, canonPathPrefix+"Content encoding", vProps.HTTPHeaders.contentEncoding, oProps.HTTPHeaders.contentEncoding)
+			ValidatePropertyPtr(a, canonPathPrefix+"Content language", vProps.HTTPHeaders.contentLanguage, oProps.HTTPHeaders.contentLanguage)
+			ValidatePropertyPtr(a, canonPathPrefix+"Content type", vProps.HTTPHeaders.contentType, oProps.HTTPHeaders.contentType)
 
 			switch manager.Location() {
 			case common.ELocation.Blob():
-				ValidatePropertyPtr(a, "Blob type", vProps.BlobProperties.Type, oProps.BlobProperties.Type)
+				ValidatePropertyPtr(a, canonPathPrefix+"Blob type", vProps.BlobProperties.Type, oProps.BlobProperties.Type)
 				ValidateTags(a, vProps.BlobProperties.Tags, oProps.BlobProperties.Tags)
 				ValidatePropertyPtr(a, "Block blob access tier", vProps.BlobProperties.BlockBlobAccessTier, oProps.BlobProperties.BlockBlobAccessTier)
 				ValidatePropertyPtr(a, "Page blob access tier", vProps.BlobProperties.PageBlobAccessTier, oProps.BlobProperties.PageBlobAccessTier)
-			case common.ELocation.File():
+			case common.ELocation.File(), common.ELocation.FileNFS():
 				ValidatePropertyPtr(a, "Attributes", vProps.FileProperties.FileAttributes, oProps.FileProperties.FileAttributes)
 				ValidatePropertyPtr(a, "Creation time", vProps.FileProperties.FileCreationTime, oProps.FileProperties.FileCreationTime)
 				ValidatePropertyPtr(a, "Last write time", vProps.FileProperties.FileLastWriteTime, oProps.FileProperties.FileLastWriteTime)
 				ValidatePropertyPtr(a, "Permissions", vProps.FileProperties.FilePermissions, oProps.FileProperties.FilePermissions)
+				if vProps.FileNFSProperties != nil && oProps.FileNFSProperties != nil {
+					ValidateTimePtr(a, canonPathPrefix+"NFS Creation Time", vProps.FileNFSProperties.FileCreationTime, oProps.FileNFSProperties.FileCreationTime)
+					ValidateTimePtr(a, canonPathPrefix+"NFS Last Write Time", vProps.FileNFSProperties.FileLastWriteTime, oProps.FileNFSProperties.FileLastWriteTime)
+				}
+				if vProps.FileNFSPermissions != nil && oProps.FileNFSPermissions != nil {
+					ValidatePropertyPtr(a, canonPathPrefix+"Owner", vProps.FileNFSPermissions.Owner, oProps.FileNFSPermissions.Owner)
+					ValidatePropertyPtr(a, canonPathPrefix+"Group", vProps.FileNFSPermissions.Group, oProps.FileNFSPermissions.Group)
+					ValidatePropertyPtr(a, canonPathPrefix+"FileMode", vProps.FileNFSPermissions.FileMode, oProps.FileNFSPermissions.FileMode)
+				}
 			case common.ELocation.BlobFS():
-				ValidatePropertyPtr(a, "Permissions", vProps.BlobFSProperties.Permissions, oProps.BlobFSProperties.Permissions)
-				ValidatePropertyPtr(a, "Owner", vProps.BlobFSProperties.Owner, oProps.BlobFSProperties.Owner)
-				ValidatePropertyPtr(a, "Group", vProps.BlobFSProperties.Group, oProps.BlobFSProperties.Group)
-				ValidatePropertyPtr(a, "ACL", vProps.BlobFSProperties.ACL, oProps.BlobFSProperties.ACL)
+				ValidatePropertyPtr(a, canonPathPrefix+"Permissions", vProps.BlobFSProperties.Permissions, oProps.BlobFSProperties.Permissions)
+				ValidatePropertyPtr(a, canonPathPrefix+"Owner", vProps.BlobFSProperties.Owner, oProps.BlobFSProperties.Owner)
+				ValidatePropertyPtr(a, canonPathPrefix+"Group", vProps.BlobFSProperties.Group, oProps.BlobFSProperties.Group)
+				ValidatePropertyPtr(a, canonPathPrefix+"ACL", vProps.BlobFSProperties.ACL, oProps.BlobFSProperties.ACL)
 			case common.ELocation.Local():
-				ValidateTimePtr(a, "Last modified time", vProps.LastModifiedTime, oProps.LastModifiedTime)
+				ValidateTimePtr(a, canonPathPrefix+"Last modified time", vProps.LastModifiedTime, oProps.LastModifiedTime)
 			}
 		},
 	})
@@ -173,6 +226,19 @@ func ValidateListOutput(a Asserter, stdout AzCopyStdout, expectedObjects map[AzC
 	a.Assert("map of objects must be equivalent in size", Equal{}, len(expectedObjects), len(listStdout.Items))
 	a.Assert("map of objects must match", MapContains[AzCopyOutputKey, cmd.AzCopyListObject]{TargetMap: expectedObjects}, listStdout.Items)
 	a.Assert("summary must match", Equal{}, listStdout.Summary, DerefOrZero(expectedSummary))
+}
+
+func ValidateHardlinkedSkippedCount(a Asserter, stdOut AzCopyStdout, expected uint32) {
+	if dryrunner, ok := a.(DryrunAsserter); ok && dryrunner.Dryrun() {
+		return
+	}
+
+	parsedStdout := GetTypeOrAssert[*AzCopyParsedCopySyncRemoveStdout](a, stdOut)
+	hardlinkedConvertedCount := parsedStdout.FinalStatus.HardlinksConvertedCount
+	if hardlinkedConvertedCount != expected {
+		a.Error(fmt.Sprintf("expected hardlink converted count (%d) received count (%d)", expected, hardlinkedConvertedCount))
+	}
+	return
 }
 
 func ValidateMessageOutput(a Asserter, stdout AzCopyStdout, message string, shouldContain bool) {
@@ -247,7 +313,7 @@ func ValidateListTextOutput(a Asserter, stdout AzCopyStdout, expectedObjects map
 	}
 
 	for _, line := range stdout.RawStdout() {
-		if line != "" {
+		if line != "" && !strings.HasPrefix(line, "WARN") {
 			// checking summary lines first if they exist
 			if strings.Contains(line, "File count:") {
 				fileCount := strings.Split(line, ":")
@@ -436,7 +502,7 @@ func ValidateDryRunOutput(a Asserter, output AzCopyStdout, rootSrc ResourceManag
 	}
 }
 
-func ValidateJobsListOutput(a Asserter, stdout AzCopyStdout, expectedJobIDs int) {
+func ValidateJobsListOutput(a Asserter, stdout AzCopyStdout, expectedJobIDs int, expectedJobs []string) {
 	if dryrunner, ok := a.(DryrunAsserter); ok && dryrunner.Dryrun() {
 		return
 	}
@@ -444,6 +510,20 @@ func ValidateJobsListOutput(a Asserter, stdout AzCopyStdout, expectedJobIDs int)
 	jobsListStdout, ok := stdout.(*AzCopyParsedJobsListStdout)
 	a.AssertNow("stdout must be AzCopyParsedJobsListStdout", Equal{}, ok, true)
 	a.Assert("No of jobs executed should be equivalent", Equal{}, expectedJobIDs, jobsListStdout.JobsCount)
+
+	// Create a set of actual job IDs for efficient lookup
+	actualJobs := make(map[string]bool)
+	for _, job := range jobsListStdout.Jobs {
+		j := job.JobId.String()
+		actualJobs[j] = true
+	}
+
+	// Check if each expected job is in the actual jobs list
+	for _, expectedJob := range expectedJobs {
+		if _, found := actualJobs[expectedJob]; !found {
+			a.Assert(fmt.Sprintf("expected job with ID %s not found in jobs list", expectedJob), Always{})
+		}
+	}
 }
 
 func ValidateLogFileRetention(a Asserter, logsDir string, expectedLogFileToRetain int) {
