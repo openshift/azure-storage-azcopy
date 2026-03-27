@@ -23,10 +23,11 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/Azure/azure-storage-azcopy/v10/azcopy"
 	"strings"
 	"time"
+
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-storage-azcopy/v10/azcopy"
 
 	"github.com/Azure/azure-storage-azcopy/v10/common"
 	"github.com/spf13/cobra"
@@ -67,7 +68,7 @@ func init() {
 
 			err = HandleListJobsCommand(withStatus)
 			if err == nil {
-				glcm.Exit(nil, common.EExitCode.Success())
+				glcm.Exit(nil, EExitCode.Success())
 			} else {
 				glcm.Error(fmt.Sprintf("failed to perform jobs list command due to error: %s", err.Error()))
 			}
@@ -96,8 +97,8 @@ func HandleListJobsCommand(jobStatus common.JobStatus) error {
 // PrintExistingJobIds prints the response of listOrder command when listOrder command requested the list of existing jobs
 func PrintExistingJobIds(listJobResponse azcopy.ListJobsResponse) error {
 
-	glcm.Exit(func(format common.OutputFormat) string {
-		if format == common.EOutputFormat.Json() {
+	glcm.Exit(func(format OutputFormat) string {
+		if format == EOutputFormat.Json() {
 			// Create the response structure using types from the common package.
 			resp := common.ListJobsResponse{
 				JobIDDetails: make([]common.JobIDDetails, len(listJobResponse.Details)),
@@ -121,13 +122,13 @@ func PrintExistingJobIds(listJobResponse azcopy.ListJobsResponse) error {
 		var sb strings.Builder
 		sb.WriteString("Existing Jobs \n")
 		for _, detail := range listJobResponse.Details {
-			sb.WriteString(fmt.Sprintf("JobId: %s\nStart Time: %s\nStatus: %s\nCommand: %s\n\n",
+			fmt.Fprintf(&sb, "JobId: %s\nStart Time: %s\nStatus: %s\nCommand: %s\n\n",
 				detail.JobID.String(),
 				detail.StartTime.Format(time.RFC850),
 				detail.Status,
-				detail.Command))
+				detail.Command)
 		}
 		return sb.String()
-	}, common.EExitCode.Success())
+	}, EExitCode.Success())
 	return nil
 }
