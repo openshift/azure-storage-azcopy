@@ -23,6 +23,7 @@ package cmd
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -155,10 +156,12 @@ func ValidateCachedVersion(filePath string) (*Version, error) {
 // PrintOlderVersion prints out info messages that the newest version is available to download.
 func PrintOlderVersion(newest Version, local Version) {
 	if local.OlderThan(newest) {
-		executablePathSegments := strings.Split(strings.Replace(os.Args[0], "\\", "/", -1), "/")
+		executablePathSegments := strings.Split(strings.ReplaceAll(os.Args[0], "\\", "/"), "/")
 		executableName := executablePathSegments[len(executablePathSegments)-1]
 
 		// output in info mode instead of stderr, as it was crashing CI jobs of some people
 		glcm.Info(executableName + " " + local.original + ": A newer version " + newest.original + " is available to download\n")
+	} else {
+		glcm.Info(fmt.Sprintf("Current AzCopy version %s is up to date\n", local.original))
 	}
 }
