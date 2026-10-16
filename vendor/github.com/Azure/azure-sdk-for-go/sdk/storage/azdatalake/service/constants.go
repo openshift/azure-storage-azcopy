@@ -1,6 +1,3 @@
-//go:build go1.18
-// +build go1.18
-
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
@@ -14,6 +11,7 @@ import (
 // PublicAccessType defines values for AccessType - private (default) or file or filesystem.
 type PublicAccessType = filesystem.PublicAccessType
 
+// Not to be used anymore as public access is disabled.
 const (
 	File       PublicAccessType = filesystem.File
 	FileSystem PublicAccessType = filesystem.FileSystem

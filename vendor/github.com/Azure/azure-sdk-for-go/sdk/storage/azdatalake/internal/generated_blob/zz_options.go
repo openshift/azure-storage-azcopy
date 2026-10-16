@@ -16,6 +16,9 @@ type AppendBlobClientAppendBlockFromURLOptions struct {
 	// Only Bearer type is supported. Credentials should be a valid OAuth access token to copy source.
 	CopySourceAuthorization *string
 
+	// Valid value is backup
+	FileRequestIntent *FileShareTokenIntent
+
 	// Provides a client-generated, opaque value with a 1 KB character limit that is recorded in the analytics logs when storage
 	// analytics logging is enabled.
 	RequestID *string
@@ -30,7 +33,7 @@ type AppendBlobClientAppendBlockFromURLOptions struct {
 	SourceRange *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 
 	// Specify the transactional md5 for the body, to be validated by the service.
@@ -43,8 +46,15 @@ type AppendBlobClientAppendBlockOptions struct {
 	// analytics logging is enabled.
 	RequestID *string
 
+	// Required if the request body is a structured message. Specifies the message schema version and properties.
+	StructuredBodyType *string
+
+	// Required if the request body is a structured message. Specifies the length of the blob/file content inside the message
+	// body. Will always be smaller than Content-Length.
+	StructuredContentLength *int64
+
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 
 	// Specify the transactional crc64 for the body, to be validated by the service.
@@ -81,7 +91,7 @@ type AppendBlobClientCreateOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -92,7 +102,7 @@ type AppendBlobClientSealOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -117,7 +127,7 @@ type BlobClientAbortCopyFromURLOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -133,7 +143,7 @@ type BlobClientAcquireLeaseOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -152,7 +162,7 @@ type BlobClientBreakLeaseOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -163,7 +173,7 @@ type BlobClientChangeLeaseOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -177,6 +187,9 @@ type BlobClientCopyFromURLOptions struct {
 
 	// Optional, default 'replace'. Indicates if source tags should be copied or replaced with the tags specified by x-ms-tags.
 	CopySourceTags *BlobCopySourceTags
+
+	// Valid value is backup
+	FileRequestIntent *FileShareTokenIntent
 
 	// Specifies the date time when the blobs immutability policy is set to expire.
 	ImmutabilityPolicyExpiry *time.Time
@@ -206,7 +219,7 @@ type BlobClientCopyFromURLOptions struct {
 	Tier *AccessTier
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -225,7 +238,7 @@ type BlobClientCreateSnapshotOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -236,13 +249,28 @@ type BlobClientDeleteImmutabilityPolicyOptions struct {
 	// analytics logging is enabled.
 	RequestID *string
 
+	// The snapshot parameter is an opaque DateTime value that, when present, specifies the blob snapshot to retrieve. For more
+	// information on working with blob snapshots, see Creating a Snapshot of a Blob.
+	// [https://learn.microsoft.com/rest/api/storageservices/creating-a-snapshot-of-a-blob]
+	Snapshot *string
+
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
+
+	// The version id parameter is an opaque DateTime value that, when present, specifies the version of the blob to operate on.
+	// It's for service version 2019-10-10 and newer.
+	VersionID *string
 }
 
 // BlobClientDeleteOptions contains the optional parameters for the BlobClient.Delete method.
 type BlobClientDeleteOptions struct {
+	// Specify this header value to operate only on a blob if the access-tier has been modified since the specified date/time.
+	AccessTierIfModifiedSince *time.Time
+
+	// Specify this header value to operate only on a blob if the access-tier has not been modified since the specified date/time.
+	AccessTierIfUnmodifiedSince *time.Time
+
 	// Required if the blob has associated snapshots. Specify one of the following two options: include: Delete the base blob
 	// and all of its snapshots. only: Delete only the blob's snapshots and not the blob
 	// itself
@@ -257,11 +285,11 @@ type BlobClientDeleteOptions struct {
 
 	// The snapshot parameter is an opaque DateTime value that, when present, specifies the blob snapshot to retrieve. For more
 	// information on working with blob snapshots, see Creating a Snapshot of a Blob.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/creating-a-snapshot-of-a-blob]
+	// [https://learn.microsoft.com/rest/api/storageservices/creating-a-snapshot-of-a-blob]
 	Snapshot *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 
 	// The version id parameter is an opaque DateTime value that, when present, specifies the version of the blob to operate on.
@@ -288,11 +316,15 @@ type BlobClientDownloadOptions struct {
 
 	// The snapshot parameter is an opaque DateTime value that, when present, specifies the blob snapshot to retrieve. For more
 	// information on working with blob snapshots, see Creating a Snapshot of a Blob.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/creating-a-snapshot-of-a-blob]
+	// [https://learn.microsoft.com/rest/api/storageservices/creating-a-snapshot-of-a-blob]
 	Snapshot *string
 
+	// Specifies the response content should be returned as a structured message and specifies the message schema version and
+	// properties.
+	StructuredBodyType *string
+
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 
 	// The version id parameter is an opaque DateTime value that, when present, specifies the version of the blob to operate on.
@@ -302,7 +334,13 @@ type BlobClientDownloadOptions struct {
 
 // BlobClientGetAccountInfoOptions contains the optional parameters for the BlobClient.GetAccountInfo method.
 type BlobClientGetAccountInfoOptions struct {
-	// placeholder for future optional parameters
+	// Provides a client-generated, opaque value with a 1 KB character limit that is recorded in the analytics logs when storage
+	// analytics logging is enabled.
+	RequestID *string
+
+	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
+	Timeout *int32
 }
 
 // BlobClientGetPropertiesOptions contains the optional parameters for the BlobClient.GetProperties method.
@@ -313,11 +351,11 @@ type BlobClientGetPropertiesOptions struct {
 
 	// The snapshot parameter is an opaque DateTime value that, when present, specifies the blob snapshot to retrieve. For more
 	// information on working with blob snapshots, see Creating a Snapshot of a Blob.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/creating-a-snapshot-of-a-blob]
+	// [https://learn.microsoft.com/rest/api/storageservices/creating-a-snapshot-of-a-blob]
 	Snapshot *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 
 	// The version id parameter is an opaque DateTime value that, when present, specifies the version of the blob to operate on.
@@ -333,11 +371,11 @@ type BlobClientGetTagsOptions struct {
 
 	// The snapshot parameter is an opaque DateTime value that, when present, specifies the blob snapshot to retrieve. For more
 	// information on working with blob snapshots, see Creating a Snapshot of a Blob.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/creating-a-snapshot-of-a-blob]
+	// [https://learn.microsoft.com/rest/api/storageservices/creating-a-snapshot-of-a-blob]
 	Snapshot *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 
 	// The version id parameter is an opaque DateTime value that, when present, specifies the version of the blob to operate on.
@@ -356,11 +394,11 @@ type BlobClientQueryOptions struct {
 
 	// The snapshot parameter is an opaque DateTime value that, when present, specifies the blob snapshot to retrieve. For more
 	// information on working with blob snapshots, see Creating a Snapshot of a Blob.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/creating-a-snapshot-of-a-blob]
+	// [https://learn.microsoft.com/rest/api/storageservices/creating-a-snapshot-of-a-blob]
 	Snapshot *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -371,7 +409,7 @@ type BlobClientReleaseLeaseOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -382,7 +420,7 @@ type BlobClientRenewLeaseOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -396,7 +434,7 @@ type BlobClientSetExpiryOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -407,7 +445,7 @@ type BlobClientSetHTTPHeadersOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -423,9 +461,18 @@ type BlobClientSetImmutabilityPolicyOptions struct {
 	// analytics logging is enabled.
 	RequestID *string
 
+	// The snapshot parameter is an opaque DateTime value that, when present, specifies the blob snapshot to retrieve. For more
+	// information on working with blob snapshots, see Creating a Snapshot of a Blob.
+	// [https://learn.microsoft.com/rest/api/storageservices/creating-a-snapshot-of-a-blob]
+	Snapshot *string
+
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
+
+	// The version id parameter is an opaque DateTime value that, when present, specifies the version of the blob to operate on.
+	// It's for service version 2019-10-10 and newer.
+	VersionID *string
 }
 
 // BlobClientSetLegalHoldOptions contains the optional parameters for the BlobClient.SetLegalHold method.
@@ -434,9 +481,18 @@ type BlobClientSetLegalHoldOptions struct {
 	// analytics logging is enabled.
 	RequestID *string
 
+	// The snapshot parameter is an opaque DateTime value that, when present, specifies the blob snapshot to retrieve. For more
+	// information on working with blob snapshots, see Creating a Snapshot of a Blob.
+	// [https://learn.microsoft.com/rest/api/storageservices/creating-a-snapshot-of-a-blob]
+	Snapshot *string
+
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
+
+	// The version id parameter is an opaque DateTime value that, when present, specifies the version of the blob to operate on.
+	// It's for service version 2019-10-10 and newer.
+	VersionID *string
 }
 
 // BlobClientSetMetadataOptions contains the optional parameters for the BlobClient.SetMetadata method.
@@ -454,7 +510,7 @@ type BlobClientSetMetadataOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -465,7 +521,7 @@ type BlobClientSetTagsOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 
 	// Specify the transactional crc64 for the body, to be validated by the service.
@@ -490,11 +546,11 @@ type BlobClientSetTierOptions struct {
 
 	// The snapshot parameter is an opaque DateTime value that, when present, specifies the blob snapshot to retrieve. For more
 	// information on working with blob snapshots, see Creating a Snapshot of a Blob.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/creating-a-snapshot-of-a-blob]
+	// [https://learn.microsoft.com/rest/api/storageservices/creating-a-snapshot-of-a-blob]
 	Snapshot *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 
 	// The version id parameter is an opaque DateTime value that, when present, specifies the version of the blob to operate on.
@@ -538,7 +594,7 @@ type BlobClientStartCopyFromURLOptions struct {
 	Tier *AccessTier
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -549,7 +605,7 @@ type BlobClientUndeleteOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -575,6 +631,21 @@ type BlobHTTPHeaders struct {
 
 	// Optional. Sets the blob's content type. If specified, this property is stored with the blob and returned with a read request.
 	BlobContentType *string
+}
+
+// BlobModifiedAccessConditions contains a group of parameters for the BlobClient.GetTags method.
+type BlobModifiedAccessConditions struct {
+	// Specify an ETag value to operate only on blobs with a matching value.
+	IfMatch *azcore.ETag
+
+	// Specify this header value to operate only on a blob if it has been modified since the specified date/time.
+	IfModifiedSince *time.Time
+
+	// Specify an ETag value to operate only on blobs without a matching value.
+	IfNoneMatch *azcore.ETag
+
+	// Specify this header value to operate only on a blob if it has not been modified since the specified date/time.
+	IfUnmodifiedSince *time.Time
 }
 
 // BlockBlobClientCommitBlockListOptions contains the optional parameters for the BlockBlobClient.CommitBlockList method.
@@ -607,7 +678,7 @@ type BlockBlobClientCommitBlockListOptions struct {
 	Tier *AccessTier
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 
 	// Specify the transactional crc64 for the body, to be validated by the service.
@@ -625,11 +696,11 @@ type BlockBlobClientGetBlockListOptions struct {
 
 	// The snapshot parameter is an opaque DateTime value that, when present, specifies the blob snapshot to retrieve. For more
 	// information on working with blob snapshots, see Creating a Snapshot of a Blob.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/creating-a-snapshot-of-a-blob]
+	// [https://learn.microsoft.com/rest/api/storageservices/creating-a-snapshot-of-a-blob]
 	Snapshot *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -646,6 +717,9 @@ type BlockBlobClientPutBlobFromURLOptions struct {
 
 	// Optional, default 'replace'. Indicates if source tags should be copied or replaced with the tags specified by x-ms-tags.
 	CopySourceTags *BlobCopySourceTags
+
+	// Valid value is backup
+	FileRequestIntent *FileShareTokenIntent
 
 	// Optional. Specifies a user-defined name-value pair associated with the blob. If no name-value pairs are specified, the
 	// operation will copy the metadata from the source blob or file to the destination
@@ -666,7 +740,7 @@ type BlockBlobClientPutBlobFromURLOptions struct {
 	Tier *AccessTier
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 
 	// Specify the transactional md5 for the body, to be validated by the service.
@@ -677,6 +751,9 @@ type BlockBlobClientPutBlobFromURLOptions struct {
 type BlockBlobClientStageBlockFromURLOptions struct {
 	// Only Bearer type is supported. Credentials should be a valid OAuth access token to copy source.
 	CopySourceAuthorization *string
+
+	// Valid value is backup
+	FileRequestIntent *FileShareTokenIntent
 
 	// Provides a client-generated, opaque value with a 1 KB character limit that is recorded in the analytics logs when storage
 	// analytics logging is enabled.
@@ -692,7 +769,7 @@ type BlockBlobClientStageBlockFromURLOptions struct {
 	SourceRange *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -702,8 +779,15 @@ type BlockBlobClientStageBlockOptions struct {
 	// analytics logging is enabled.
 	RequestID *string
 
+	// Required if the request body is a structured message. Specifies the message schema version and properties.
+	StructuredBodyType *string
+
+	// Required if the request body is a structured message. Specifies the length of the blob/file content inside the message
+	// body. Will always be smaller than Content-Length.
+	StructuredContentLength *int64
+
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 
 	// Specify the transactional crc64 for the body, to be validated by the service.
@@ -739,11 +823,18 @@ type BlockBlobClientUploadOptions struct {
 	// analytics logging is enabled.
 	RequestID *string
 
+	// Required if the request body is a structured message. Specifies the message schema version and properties.
+	StructuredBodyType *string
+
+	// Required if the request body is a structured message. Specifies the length of the blob/file content inside the message
+	// body. Will always be smaller than Content-Length.
+	StructuredContentLength *int64
+
 	// Optional. Indicates the tier to be set on the blob.
 	Tier *AccessTier
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 
 	// Specify the transactional crc64 for the body, to be validated by the service.
@@ -765,7 +856,7 @@ type ContainerClientAcquireLeaseOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -784,7 +875,7 @@ type ContainerClientBreakLeaseOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -795,7 +886,7 @@ type ContainerClientChangeLeaseOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -817,7 +908,7 @@ type ContainerClientCreateOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -828,7 +919,7 @@ type ContainerClientDeleteOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -856,7 +947,7 @@ type ContainerClientFilterBlobsOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -867,13 +958,19 @@ type ContainerClientGetAccessPolicyOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
 // ContainerClientGetAccountInfoOptions contains the optional parameters for the ContainerClient.GetAccountInfo method.
 type ContainerClientGetAccountInfoOptions struct {
-	// placeholder for future optional parameters
+	// Provides a client-generated, opaque value with a 1 KB character limit that is recorded in the analytics logs when storage
+	// analytics logging is enabled.
+	RequestID *string
+
+	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
+	Timeout *int32
 }
 
 // ContainerClientGetPropertiesOptions contains the optional parameters for the ContainerClient.GetProperties method.
@@ -883,7 +980,7 @@ type ContainerClientGetPropertiesOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -914,8 +1011,12 @@ type ContainerClientListBlobFlatSegmentOptions struct {
 	// analytics logging is enabled.
 	RequestID *string
 
+	// Specifies the relative path to list paths from. For non-recursive list, only one entity level is supported; For recursive
+	// list, multiple entity levels are supported. (Inclusive)
+	StartFrom *string
+
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -946,8 +1047,12 @@ type ContainerClientListBlobHierarchySegmentOptions struct {
 	// analytics logging is enabled.
 	RequestID *string
 
+	// Specifies the relative path to list paths from. For non-recursive list, only one entity level is supported; For recursive
+	// list, multiple entity levels are supported. (Inclusive)
+	StartFrom *string
+
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -958,7 +1063,7 @@ type ContainerClientReleaseLeaseOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -972,7 +1077,7 @@ type ContainerClientRenameOptions struct {
 	SourceLeaseID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -983,7 +1088,7 @@ type ContainerClientRenewLeaseOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -1000,7 +1105,7 @@ type ContainerClientRestoreOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -1014,7 +1119,7 @@ type ContainerClientSetAccessPolicyOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -1033,7 +1138,7 @@ type ContainerClientSetMetadataOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -1044,7 +1149,7 @@ type ContainerClientSubmitBatchOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -1116,7 +1221,7 @@ type PageBlobClientClearPagesOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -1127,7 +1232,7 @@ type PageBlobClientCopyIncrementalOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -1165,7 +1270,7 @@ type PageBlobClientCreateOptions struct {
 	Tier *PremiumPageBlobAccessTier
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -1207,11 +1312,11 @@ type PageBlobClientGetPageRangesDiffOptions struct {
 
 	// The snapshot parameter is an opaque DateTime value that, when present, specifies the blob snapshot to retrieve. For more
 	// information on working with blob snapshots, see Creating a Snapshot of a Blob.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/creating-a-snapshot-of-a-blob]
+	// [https://learn.microsoft.com/rest/api/storageservices/creating-a-snapshot-of-a-blob]
 	Snapshot *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -1240,11 +1345,11 @@ type PageBlobClientGetPageRangesOptions struct {
 
 	// The snapshot parameter is an opaque DateTime value that, when present, specifies the blob snapshot to retrieve. For more
 	// information on working with blob snapshots, see Creating a Snapshot of a Blob.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/creating-a-snapshot-of-a-blob]
+	// [https://learn.microsoft.com/rest/api/storageservices/creating-a-snapshot-of-a-blob]
 	Snapshot *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -1255,7 +1360,7 @@ type PageBlobClientResizeOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -1271,7 +1376,7 @@ type PageBlobClientUpdateSequenceNumberOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -1279,6 +1384,9 @@ type PageBlobClientUpdateSequenceNumberOptions struct {
 type PageBlobClientUploadPagesFromURLOptions struct {
 	// Only Bearer type is supported. Credentials should be a valid OAuth access token to copy source.
 	CopySourceAuthorization *string
+
+	// Valid value is backup
+	FileRequestIntent *FileShareTokenIntent
 
 	// Provides a client-generated, opaque value with a 1 KB character limit that is recorded in the analytics logs when storage
 	// analytics logging is enabled.
@@ -1291,7 +1399,7 @@ type PageBlobClientUploadPagesFromURLOptions struct {
 	SourceContentcrc64 []byte
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -1304,8 +1412,15 @@ type PageBlobClientUploadPagesOptions struct {
 	// analytics logging is enabled.
 	RequestID *string
 
+	// Required if the request body is a structured message. Specifies the message schema version and properties.
+	StructuredBodyType *string
+
+	// Required if the request body is a structured message. Specifies the length of the blob/file content inside the message
+	// body. Will always be smaller than Content-Length.
+	StructuredContentLength *int64
+
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 
 	// Specify the transactional crc64 for the body, to be validated by the service.
@@ -1351,13 +1466,19 @@ type ServiceClientFilterBlobsOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
 // ServiceClientGetAccountInfoOptions contains the optional parameters for the ServiceClient.GetAccountInfo method.
 type ServiceClientGetAccountInfoOptions struct {
-	// placeholder for future optional parameters
+	// Provides a client-generated, opaque value with a 1 KB character limit that is recorded in the analytics logs when storage
+	// analytics logging is enabled.
+	RequestID *string
+
+	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
+	Timeout *int32
 }
 
 // ServiceClientGetPropertiesOptions contains the optional parameters for the ServiceClient.GetProperties method.
@@ -1367,7 +1488,7 @@ type ServiceClientGetPropertiesOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -1378,7 +1499,7 @@ type ServiceClientGetStatisticsOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -1389,7 +1510,7 @@ type ServiceClientGetUserDelegationKeyOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -1421,7 +1542,7 @@ type ServiceClientListContainersSegmentOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -1432,7 +1553,7 @@ type ServiceClientSetPropertiesOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
 }
 
@@ -1443,8 +1564,21 @@ type ServiceClientSubmitBatchOptions struct {
 	RequestID *string
 
 	// The timeout parameter is expressed in seconds. For more information, see Setting Timeouts for Blob Service Operations.
-	// [https://docs.microsoft.com/en-us/rest/api/storageservices/fileservices/setting-timeouts-for-blob-service-operations]
+	// [https://learn.microsoft.com/rest/api/storageservices/setting-timeouts-for-blob-service-operations]
 	Timeout *int32
+}
+
+// SourceCPKInfo contains a group of parameters for the PageBlobClient.UploadPagesFromURL method.
+type SourceCPKInfo struct {
+	// The algorithm used to produce the source encryption key hash. Currently, the only accepted value is "AES256". Must be provided
+	// if the x-ms-source-encryption-key is provided.
+	SourceEncryptionAlgorithm *EncryptionAlgorithmType
+
+	// Optional. Specifies the source encryption key to use to encrypt the source data provided in the request.
+	SourceEncryptionKey *string
+
+	// The SHA-256 hash of the provided source encryption key. Must be provided if the x-ms-source-encryption-key header is provided.
+	SourceEncryptionKeySHA256 *string
 }
 
 // SourceModifiedAccessConditions contains a group of parameters for the BlobClient.StartCopyFromURL method.

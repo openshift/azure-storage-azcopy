@@ -1,5 +1,119 @@
 # Release History
 
+## 1.6.0 (2026-06-15)
+
+### Features Added
+* Includes all features from `1.6.0-beta.1`
+
+## 1.5.0 (2026-05-15)
+
+### Features Added
+* Includes all features from `1.5.0-beta.1`
+
+## 1.6.0-beta.1 (2026-05-05)
+
+### Features Added
+* Added support for service version 2026-06-06.
+* Added `GetSystemProperties` API to file and directory clients for retrieving system-defined properties using the `getStatus` action.
+* Added `GetTags` and `SetTags` API to file and directory clients.
+
+## 1.5.0-beta.1 (2026-04-23)
+
+### Features Added
+* Added support for service version 2026-04-06.
+* Added cross-tenant support for Principal-Bound User Delegation SAS.
+* Added support for Dynamic User Delegation SAS.
+* Added error code `PathIsTooDeep` which is returned when a path contains more than 63 path segments.
+
+### Bugs Fixed
+* Added support for error code `IncrementalCopyOfEarlierSnapshotNotAllowed`. This replaces `IncrementalCopyOfEarlierVersionSnapshotNotAllowed` which has been deprecated.
+
+## 1.4.4 (2026-01-12)
+
+### Features Added
+* Added support for service version 2026-02-06.
+
+## 1.4.3 (2025-10-16)
+
+### Other Changes
+* Updated service version to `2025-11-05`
+* Updated `azidentity` version to `1.13.0`
+* Updated `azcore` version to `1.19.1`
+* Updated `azblob` version to `v1.6.2`
+
+## 1.4.2 (2025-07-23)
+
+### Other Changes
+* Updated `azcore` version to `1.18.1`
+
+## 1.4.2-beta.1 (2025-07-08)
+
+### Bugs Fixed
+* Fix panic in File and Directory client DownloadStream and Get Properties on authentication failure.
+
+### Other Changes
+* Updated `azidentity` version to `1.10.1`
+
+## 1.4.1 (2025-04-28)
+
+### Other Changes
+* Updated `azidentity` version to `1.9.0`
+* Updated `azcore` version to `1.18.0`
+* Updated `azblob` version to `v1.6.1`
+
+## 1.4.1-beta.1 (2025-02-12)
+
+### Features Added
+* Upgraded service version to `2025-05-05`.
+
+### Other Changes
+* Updated `azidentity` version to `1.8.1`
+* Updated `azblob` version to `v1.6.1-beta.1`
+
+## 1.4.0 (2025-01-27)
+
+### Features Added
+* Upgraded service version to `2025-01-05`.
+* Updated `azidentity` version to `1.8.1`
+
+### Bugs Fixed
+* Fix panic when invalid sas is passed to get-properties call. Fixes [#23912](https://github.com/Azure/azure-sdk-for-go/issues/23912)
+* Added NewListDirectoryPathPager. Fixes [#23852](https://github.com/Azure/azure-sdk-for-go/issues/23852), [#21083](https://github.com/Azure/azure-sdk-for-go/issues/21083), [#18921](https://github.com/Azure/azure-sdk-for-go/issues/18921)
+
+### Other Changes
+* Updated `azblob` version to `v1.6.0`
+
+## 1.4.0-beta.1 (2025-01-15)
+
+### Other Changes
+* Updated `azblob` version to `v1.6.0-beta.1`
+
+## 1.3.0 (2024-11-13)
+
+### Features Added
+* Fix compareHeaders custom sorting algorithm for String To Sign.
+
+## 1.3.0-beta.1 (2024-10-23)
+
+### Other Changes
+* Updated `azcore` version to `1.16.0`
+* Updated `azblob` version to `v1.5.0-beta.1`
+* Updated `azidentity` version to `1.8.0`
+
+## 1.2.1 (2024-09-23)
+
+### Features Added
+* Upgraded service version to `2024-08-04`.
+
+## 1.2.1-beta.1 (2024-08-30)
+
+### Features Added
+* Upgraded service version to `2024-08-04`.
+
+### Other Changes
+* Updated `azcore` version to `1.14.0`
+* Updated `azblob` version to `1.4.1-beta.1`
+
 ## 1.2.0 (2024-07-19)
 
 ### Other Changes
